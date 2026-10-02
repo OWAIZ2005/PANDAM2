@@ -17,7 +17,6 @@ import {
   colors,
   layout,
   radii,
-  shadows,
   spacing,
 } from '@pandam/ui';
 
@@ -145,12 +144,22 @@ export default function HomeScreen() {
       >
         <Stack gap="xl">
           {/* --------------------------------------------------- greeting -- */}
-          <Row justify="space-between" align="center" gap={spacing.md}>
+          <Row justify="space-between" align="flex-start" gap={spacing.md}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text variant="label" tone="muted">
-                {greeting()},
+              <Text variant="overline" tone="muted">
+                GOOD {greeting().split(' ')[1]?.toUpperCase()},
               </Text>
-              <Text variant="hero" numberOfLines={1}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: 'InterTight_900Black',
+                  fontSize: 44,
+                  lineHeight: 44,
+                  letterSpacing: -1.8,
+                  color: colors.textPrimary,
+                  textTransform: 'uppercase',
+                }}
+              >
                 {name}
               </Text>
             </View>
@@ -160,11 +169,15 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Your profile"
               onPress={() => router.push('/(app)/(tabs)/profile')}
-              style={{ borderRadius: radii.pill }}
+              style={{
+                borderRadius: radii.pill,
+                borderWidth: 1.5,
+                borderColor: colors.border,
+              }}
             >
               <Avatar
                 name={profile?.displayName ?? 'You'}
-                size={46}
+                size={44}
                 uri={mediaSrc(profile?.avatarUrl)}
               />
             </Press>
@@ -186,14 +199,13 @@ export default function HomeScreen() {
               borderRadius: radii.md,
               paddingHorizontal: spacing.lg,
               height: 52,
-              ...shadows.xs,
             }}
             states={{
-              hover: { borderColor: colors.accentBorder },
+              hover: { borderColor: colors.accent },
               pressed: { backgroundColor: colors.surfaceHover },
             }}
           >
-            <Ionicons name="search" size={19} color={colors.accent} />
+            <Ionicons name="search" size={19} color={colors.textPrimary} />
             <Text tone="muted" style={{ flex: 1, fontSize: 15 }} numberOfLines={1}>
               Search cameras, skills, furniture…
             </Text>
@@ -266,7 +278,12 @@ export default function HomeScreen() {
         <Stack gap="2xl">
           {/* ------------------------------------------------- categories -- */}
           {categories.data && categories.data.length > 0 ? (
-            <Section title="Browse by category" actionLabel="All" onAction={() => goDiscover()}>
+            <Section
+              eyebrow="03"
+              title="Browse by category"
+              actionLabel="All"
+              onAction={() => goDiscover()}
+            >
               <CategoryGrid
                 categories={categories.data}
                 limit={8}
@@ -304,6 +321,7 @@ export default function HomeScreen() {
 
           {/* ----------------------------------------------------- recent -- */}
           <Section
+            eyebrow="04"
             title="Fresh near you"
             subtitle="Just listed by other members"
             actionLabel="See all"

@@ -231,7 +231,7 @@ function Layer({
               width: 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: spec.label.tone === 'have' ? palette.terracotta200 : colors.need,
+              backgroundColor: spec.label.tone === 'have' ? palette.orange200 : colors.need,
             }}
           />
           <Text
@@ -422,13 +422,13 @@ function ScaledScene({
       {/* Background shapes — warm pebbles and a thin ring, far behind. */}
       <OrganicShape
         size={Math.min(w, height) * 0.82}
-        color={palette.terracotta50}
+        color={palette.orange50}
         rotate={-12}
         style={{ left: w * 0.08, top: height * 0.06 }}
       />
       <OrganicShape
         size={Math.min(w, height) * 0.46}
-        color={palette.clay50}
+        color={palette.concreteSoft}
         rotate={24}
         drift={12}
         style={{ right: w * 0.02, bottom: height * 0.02 }}
@@ -441,7 +441,7 @@ function ScaledScene({
           height: height * 0.7,
           borderRadius: height,
           borderWidth: 1.5,
-          borderColor: palette.terracotta200,
+          borderColor: palette.orange200,
           opacity: 0.5,
           left: w / 2 - height * 0.35,
           top: height * 0.15,

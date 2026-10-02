@@ -88,11 +88,11 @@ export function Card({
     {
       backgroundColor: TONE_BG[tone],
       borderRadius: radii[radius],
-      borderWidth: bordered ? 1 : 0,
+      borderWidth: bordered ? 1.5 : 0,
       borderColor: TONE_BORDER[tone],
     },
     padded && { padding: spacing.lg },
-    edge && { borderLeftWidth: 3, borderLeftColor: EDGE_COLOR[edge] },
+    edge && { borderLeftWidth: 4, borderLeftColor: EDGE_COLOR[edge] },
     shadows[depth],
     style,
   ];

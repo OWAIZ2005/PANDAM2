@@ -118,10 +118,21 @@ export default function DiscoverScreen() {
         }}
       >
         <View style={{ gap: 2 }}>
-          <Text variant="overline" tone={tone}>
+          <Text variant="overline" tone={tone} caps>
             {isHave ? 'What people have' : 'What people need'}
           </Text>
-          <Text variant="display">Discover</Text>
+          <Text
+            style={{
+              fontFamily: 'InterTight_800ExtraBold',
+              fontSize: 34,
+              lineHeight: 36,
+              letterSpacing: -1,
+              color: colors.textPrimary,
+              textTransform: 'uppercase',
+            }}
+          >
+            Discover
+          </Text>
         </View>
         <SearchInput
           icon={<Ionicons name="search" size={17} color={colors.textMuted} />}

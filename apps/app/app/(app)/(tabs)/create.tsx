@@ -5,17 +5,14 @@ import { View } from 'react-native';
 import {
   Card,
   Divider,
-  FloatingObject,
   Press,
   Reveal,
   Row,
   Screen,
   Stack,
   Text,
-  TiltCard,
   colors,
   radii,
-  shadows,
   spacing,
 } from '@pandam/ui';
 
@@ -31,6 +28,7 @@ import { AppHeader } from '@/components/AppHeader';
  * readable in one pass instead of competing with its own background.
  */
 function BigChoice({
+  number,
   edge,
   icon,
   title,
@@ -38,6 +36,7 @@ function BigChoice({
   examples,
   onPress,
 }: {
+  number: string;
   edge: 'accent' | 'need';
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -45,74 +44,91 @@ function BigChoice({
   examples: string[];
   onPress: () => void;
 }) {
-  const color = edge === 'accent' ? colors.accent : colors.need;
-  const tint = edge === 'accent' ? colors.accentSoft : colors.needSoft;
-  const border = edge === 'accent' ? colors.accentBorder : colors.needBorder;
+  // "I NEED" deliberately stays structural (white/black), not a second brand
+  // colour — only "I HAVE" gets the orange fill. See tokens.ts art direction.
+  const isHave = edge === 'accent';
+  const fill = isHave ? colors.accent : colors.surface;
+  const fg = isHave ? colors.textInverse : colors.textPrimary;
+  const fgMuted = isHave ? 'rgba(255,255,255,0.75)' : colors.textSecondary;
 
   return (
-    <TiltCard maxTilt={4}>
-      <Press
-        scale="sm"
-        lift
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        onPress={onPress}
-        style={{
-          backgroundColor: tint,
-          borderRadius: radii.xl,
-          borderWidth: 1,
-          borderColor: border,
-          overflow: 'hidden',
-          ...shadows.sm,
-        }}
-      >
-        <View style={{ padding: spacing.xl, gap: spacing.lg }}>
-          <Row justify="space-between" align="flex-start">
-            <FloatingObject amplitude={4} rotate={4}>
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: radii.lg,
-                  backgroundColor: color,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...shadows.md,
-                }}
-              >
-                <Ionicons name={icon} size={26} color={colors.textInverse} />
-              </View>
-            </FloatingObject>
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: radii.pill,
-                backgroundColor: colors.surface,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="arrow-forward" size={17} color={color} />
-            </View>
-          </Row>
-
-          <View style={{ gap: spacing.xs }}>
-            <Text variant="h1">{title}</Text>
-            <Text variant="bodySm" tone="secondary">
-              {body}
-            </Text>
+    <Press
+      scale="sm"
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={{
+        backgroundColor: fill,
+        borderRadius: radii.lg,
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        overflow: 'hidden',
+      }}
+    >
+      <View style={{ padding: spacing.xl, gap: spacing.md }}>
+        <Row justify="space-between" align="flex-start">
+          <Text
+            style={{
+              fontFamily: 'InterTight_800ExtraBold',
+              fontSize: 40,
+              lineHeight: 42,
+              letterSpacing: -1.2,
+              color: isHave ? 'rgba(255,255,255,0.55)' : colors.textFaint,
+            }}
+          >
+            {number}
+          </Text>
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: radii.md,
+              borderWidth: 1.5,
+              borderColor: isHave ? 'rgba(255,255,255,0.4)' : colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name={icon} size={18} color={fg} />
           </View>
+        </Row>
 
-          {/* Examples as plain text, not as pill badges. Three pills for three
-            nouns reads as a feature list on a pricing page; a quiet line of
-            examples reads as help. */}
-          <Text variant="caption" tone="muted">
-            {examples.join(' · ')}
+        <View style={{ gap: spacing.xs }}>
+          <Text
+            style={{
+              fontFamily: 'InterTight_800ExtraBold',
+              fontSize: 26,
+              lineHeight: 28,
+              letterSpacing: -0.6,
+              color: fg,
+              textTransform: 'uppercase',
+            }}
+          >
+            {title}
+          </Text>
+          <Text variant="bodySm" style={{ color: fgMuted }}>
+            {body}
           </Text>
         </View>
-      </Press>
-    </TiltCard>
+
+        {/* Examples as plain text, not as pill badges. Three pills for three
+            nouns reads as a feature list on a pricing page; a quiet line of
+            examples reads as help. */}
+        <Text variant="caption" style={{ color: fgMuted }}>
+          {examples.join(' · ')}
+        </Text>
+
+        <Row gap="xs" align="center">
+          <Text
+            variant="label"
+            style={{ color: fg, fontFamily: 'InterTight_700Bold', letterSpacing: 0.4 }}
+          >
+            GET STARTED
+          </Text>
+          <Ionicons name="arrow-forward" size={14} color={fg} />
+        </Row>
+      </View>
+    </Press>
   );
 }
 
@@ -158,6 +174,7 @@ export default function CreateScreen() {
       <Stack gap="xl">
         <Reveal index={0}>
           <BigChoice
+            number="01"
             edge="accent"
             icon="cube-outline"
             title="I have"
@@ -169,6 +186,7 @@ export default function CreateScreen() {
 
         <Reveal index={1}>
           <BigChoice
+            number="02"
             edge="need"
             icon="search-outline"
             title="I need"

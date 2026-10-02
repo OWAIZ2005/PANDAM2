@@ -215,13 +215,13 @@ export function ExchangeHero({
     >
       <OrganicShape
         size={260}
-        color={palette.terracotta50}
+        color={palette.orange50}
         rotate={-18}
         style={{ left: -60, top: -40 }}
       />
       <OrganicShape
         size={220}
-        color={palette.clay50}
+        color={palette.concreteSoft}
         rotate={30}
         style={{ right: -50, bottom: -30 }}
       />

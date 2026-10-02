@@ -16,14 +16,18 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ScreenBackdropProvider, ToastProvider } from '@pandam/ui';
 
-import { PandamBackground } from '@/components/brand/PandamBackground';
-
 import { AnalyticsProvider } from '@/lib/analytics';
 import { AuthBootstrap } from '@/lib/auth/AuthBootstrap';
 import { createQueryClient } from '@/lib/query';
 
-/** The one ambient background every standard screen paints (see Screen). */
-const APP_BACKDROP = <PandamBackground variant="glow" />;
+/**
+ * Swiss/neo-brutalist direction: a FLAT off-white page, no ambient glow or
+ * decorative gradient circles behind standard screens — that soft-peach
+ * backdrop was the single biggest visual mismatch against the brief. Screens
+ * that still want their own full-bleed art (Splash, the login marketing
+ * panel) mount it explicitly via `backdrop`, not through this default.
+ */
+const APP_BACKDROP = null;
 
 export function AppProviders({ children }: { children: ReactNode }) {
   // Lazy state initialiser → one stable QueryClient for the component's life.

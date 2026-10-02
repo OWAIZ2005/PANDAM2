@@ -1,29 +1,93 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { Text, colors, palette, radii, shadows, spacing, useMotionOK } from '@pandam/ui';
+import { Gradient, Text, colors, palette, spacing } from '@pandam/ui';
 
 type Side = 'have' | 'need';
 
-const COPY: Record<Side, { kicker: string; title: string; icon: keyof typeof Ionicons.glyphMap }> =
-  {
-    have: { kicker: 'I HAVE', title: 'What I can offer', icon: 'cube' },
-    need: { kicker: 'I NEED', title: "What I'm looking for", icon: 'search' },
-  };
+const COPY: Record<Side, { number: string; kicker: string; lines: string[] }> = {
+  have: { number: '01', kicker: 'I HAVE', lines: ['What I', 'can', 'offer'] },
+  need: { number: '02', kicker: 'I NEED', lines: ["What I'm", 'looking', 'for'] },
+};
 
 /**
- * I HAVE ⇄ I NEED as ONE connected control instead of two unrelated cards.
+ * A rough concrete/industrial block — two stacked gradient planes (a darker
+ * "shadow" plane offset behind a lighter "face" plane) rather than a single
+ * flat shape, so it reads as a 3D object rather than a sticker. No real
+ * photography exists in this project, so this is built from layout
+ * primitives rather than an image asset.
+ */
+function ConcreteBlock() {
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: 'absolute', right: -22, bottom: -28, width: 150, height: 150 }}
+    >
+      <Gradient
+        colors={[palette.steel, palette.charcoal]}
+        direction="diagonal"
+        style={{
+          position: 'absolute',
+          width: 108,
+          height: 108,
+          right: 4,
+          bottom: 0,
+          transform: [{ rotate: '12deg' }],
+          opacity: 0.9,
+        }}
+      />
+      <Gradient
+        colors={[palette.concrete, palette.steel]}
+        direction="diagonal"
+        style={{
+          position: 'absolute',
+          width: 118,
+          height: 118,
+          right: 26,
+          bottom: 18,
+          transform: [{ rotate: '-8deg' }],
+        }}
+      />
+    </View>
+  );
+}
+
+/**
+ * A large dark curved object — a soft-gradient disc bleeding off the panel's
+ * bottom-right edge, the orange panel's one visual counterweight.
+ */
+function DarkCurve() {
+  return (
+    <Gradient
+      pointerEvents="none"
+      colors={[palette.steel, palette.graphite]}
+      direction="diagonal"
+      style={{
+        position: 'absolute',
+        right: -46,
+        bottom: -50,
+        width: 170,
+        height: 170,
+        borderRadius: 999,
+        opacity: 0.4,
+      }}
+    />
+  );
+}
+
+/**
+ * I HAVE / I NEED — a single two-column editorial poster, not two cards.
  *
- * Two halves meet at a seam, and the exchange token sits ON the seam — the
- * give/need relationship is the shape itself. Pressing a half dips it and
- * swings the token toward that side, so the choice feels physical; the tap
- * then opens the same create flow as before. Each half says in plain words
- * what it means, so nobody has to decode the metaphor.
+ * The panels touch directly across one hairline divider: no gap, no center
+ * control of any kind. Each side layers a background, a large physical-
+ * looking object, then typography, then a bare arrow — in that order, so the
+ * object sits behind the text rather than beside it. Left is off-white with
+ * a grey concrete block; right is orange with a dark curved object. Tapping
+ * either half opens the same create flow as before.
  */
 export function IntentSwitch({
-  haveCount,
-  needCount,
+  haveCount: _haveCount,
+  needCount: _needCount,
   onHave,
   onNeed,
 }: {
@@ -32,156 +96,98 @@ export function IntentSwitch({
   onHave: () => void;
   onNeed: () => void;
 }) {
-  const motionOK = useMotionOK();
-  const turn = useSharedValue(0); // -1 toward HAVE, 1 toward NEED
-  const pressHave = useSharedValue(1);
-  const pressNeed = useSharedValue(1);
-
-  const token = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${turn.get() * 180}deg` }, { scale: 1 + Math.abs(turn.get()) * 0.08 }],
-  }));
-  const haveStyle = useAnimatedStyle(() => ({ transform: [{ scale: pressHave.get() }] }));
-  const needStyle = useAnimatedStyle(() => ({ transform: [{ scale: pressNeed.get() }] }));
-
-  const spring = { damping: 16, stiffness: 320 };
-  const onIn = (side: Side) => {
-    if (!motionOK) return;
-    turn.set(withSpring(side === 'have' ? -1 : 1, spring));
-    (side === 'have' ? pressHave : pressNeed).set(withSpring(0.97, spring));
-  };
-  const onOut = (side: Side) => {
-    if (!motionOK) return;
-    turn.set(withSpring(0, { damping: 12, stiffness: 180 }));
-    (side === 'have' ? pressHave : pressNeed).set(withSpring(1, spring));
-  };
-
-  const half = (side: Side, count: number, onPress: () => void) => {
+  const half = (side: Side, onPress: () => void) => {
     const c = COPY[side];
     const isHave = side === 'have';
     return (
-      <Animated.View style={[{ flex: 1 }, isHave ? haveStyle : needStyle]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${c.kicker}: ${c.title}. ${count} active.`}
-          onPressIn={() => onIn(side)}
-          onPressOut={() => onOut(side)}
-          onPress={onPress}
-          style={{
-            flex: 1,
-            minHeight: 148,
-            backgroundColor: isHave ? colors.accent : colors.need,
-            borderTopLeftRadius: isHave ? radii.lg : radii.xs,
-            borderBottomLeftRadius: isHave ? radii.lg : radii.xs,
-            borderTopRightRadius: isHave ? radii.xs : radii.lg,
-            borderBottomRightRadius: isHave ? radii.xs : radii.lg,
-            paddingVertical: spacing.lg,
-            // Extra room on the seam side keeps text clear of the token.
-            paddingLeft: isHave ? spacing.lg : spacing.xl + spacing.xs,
-            paddingRight: isHave ? spacing.xl + spacing.xs : spacing.lg,
-            justifyContent: 'space-between',
-            alignItems: isHave ? 'flex-start' : 'flex-end',
-          }}
-        >
-          <View
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${c.kicker}: ${c.lines.join(' ')}`}
+        onPress={onPress}
+        style={{
+          flex: 1,
+          minHeight: 224,
+          backgroundColor: isHave ? colors.background : colors.accent,
+          borderRightWidth: isHave ? 1.5 : 0,
+          borderRightColor: colors.border,
+          overflow: 'hidden',
+          padding: spacing.md,
+          justifyContent: 'space-between',
+        }}
+      >
+        {isHave ? <ConcreteBlock /> : <DarkCurve />}
+
+        <View>
+          {/* `scaleY` stretches the glyphs themselves taller without
+              touching layout — a transform paints after layout, so it never
+              changes the panel's own height. */}
+          <Text
             style={{
-              width: 34,
-              height: 34,
-              borderRadius: radii.sm,
-              backgroundColor: 'rgba(255,255,255,0.18)',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontFamily: 'InterTight_900Black',
+              fontSize: 50,
+              lineHeight: 48,
+              letterSpacing: -2,
+              color: colors.textPrimary,
+              alignSelf: 'flex-start',
+              transform: [{ scaleY: 1.18 }],
             }}
           >
-            <Ionicons name={c.icon} size={18} color={palette.white} />
-          </View>
-          <View style={{ gap: 2, alignItems: isHave ? 'flex-start' : 'flex-end' }}>
+            {c.number}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'InterTight_800ExtraBold',
+              fontSize: 10,
+              lineHeight: 13,
+              letterSpacing: 0.5,
+              color: colors.textPrimary,
+              marginTop: 1,
+            }}
+          >
+            {c.kicker}
+          </Text>
+        </View>
+
+        <View>
+          {/* Stacked, not wrapped — each word is its own line, tight
+              leading, so the headline reads as a dense editorial block. */}
+          {c.lines.map((line, i) => (
             <Text
+              key={i}
               style={{
-                fontSize: 11,
-                lineHeight: 14,
-                fontWeight: '800',
-                letterSpacing: 1,
-                color: 'rgba(255,255,255,0.82)',
+                fontFamily: 'InterTight_900Black',
+                fontSize: 24,
+                lineHeight: 23,
+                letterSpacing: -0.5,
+                color: colors.textPrimary,
               }}
             >
-              {c.kicker}
+              {line}
             </Text>
-            <Text
-              numberOfLines={2}
-              style={{
-                fontSize: 16,
-                lineHeight: 20,
-                fontWeight: '800',
-                letterSpacing: -0.3,
-                color: palette.white,
-                textAlign: isHave ? 'left' : 'right',
-              }}
-            >
-              {c.title}
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                marginTop: 6,
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: radii.pill,
-                backgroundColor: 'rgba(0,0,0,0.14)',
-              }}
-            >
-              <Ionicons name="add" size={12} color={palette.white} />
-              <Text
-                style={{ fontSize: 11.5, lineHeight: 14, fontWeight: '700', color: palette.white }}
-              >
-                {count > 0 ? `${count} active` : 'Add first'}
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-      </Animated.View>
+          ))}
+          <Ionicons
+            name="arrow-forward"
+            size={20}
+            color={colors.textPrimary}
+            style={{ marginTop: spacing.sm }}
+          />
+        </View>
+      </Pressable>
     );
   };
 
   return (
-    <View style={{ ...shadows.sm, borderRadius: radii.lg }}>
-      <View style={{ flexDirection: 'row', gap: 3 }}>
-        {half('have', haveCount, onHave)}
-        {half('need', needCount, onNeed)}
-      </View>
-      {/* The exchange token sits on the seam, joining the two halves. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Animated.View
-          style={[
-            {
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: colors.surface,
-              borderWidth: 3,
-              borderColor: colors.background,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...shadows.md,
-            },
-            token,
-          ]}
-        >
-          <Ionicons name="swap-horizontal" size={20} color={colors.accent} />
-        </Animated.View>
-      </View>
+    <View
+      style={{
+        flexDirection: 'row',
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        borderRadius: 0,
+        overflow: 'hidden',
+      }}
+    >
+      {half('have', onHave)}
+      {half('need', onNeed)}
     </View>
   );
 }

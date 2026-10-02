@@ -320,7 +320,7 @@ export function Splash() {
                 left: -d / 2,
                 top: -d / 2,
                 borderRadius: d / 2,
-                backgroundColor: palette.terracotta400,
+                backgroundColor: palette.orange400,
                 opacity: o,
               }}
             />
@@ -349,7 +349,7 @@ export function Splash() {
               top: -48,
               borderRadius: 48,
               borderWidth: 2,
-              borderColor: palette.terracotta400,
+              borderColor: palette.orange400,
             },
             ringStyle,
           ]}
@@ -369,7 +369,7 @@ export function Splash() {
               justifyContent: 'center',
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.18)',
-              shadowColor: palette.terracotta600,
+              shadowColor: palette.orange600,
               shadowOpacity: 0.6,
               shadowRadius: 30,
               shadowOffset: { width: 0, height: 10 },
@@ -452,7 +452,7 @@ export function Splash() {
         >
           <Animated.View
             style={[
-              { width: 44, height: 3, borderRadius: 2, backgroundColor: palette.terracotta400 },
+              { width: 44, height: 3, borderRadius: 2, backgroundColor: palette.orange400 },
               barStyle,
             ]}
           />

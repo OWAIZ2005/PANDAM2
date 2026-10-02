@@ -8,22 +8,19 @@
  * ---------------------------------------------------------------------------
  * ART DIRECTION
  *
- * PANDAM is a warm, premium marketplace, not a SaaS dashboard: cream ground,
- * espresso-brown ink, terracotta as the one confident brand colour, and sage
- * reserved for positive/success moments. Colour is reserved for MEANING, never
- * used as wallpaper:
+ * Swiss editorial design + neo-brutalism: off-white ground, near-black ink,
+ * vivid orange as the one confident brand signal. Structure comes from thin
+ * black borders and a strict grid, not from shadows or gradients — colour is
+ * reserved for MEANING:
  *
- *   terracotta (`accent*`)  primary brand — "I HAVE", the main action
- *   clay (`need*`)          "I NEED"      — the thing you are asking for
- *   sage (`match*`)         RECIPROCAL    — they want yours, you want theirs
+ *   orange (`accent*`)   primary brand — "I HAVE", the main action
+ *   ink (`need*`)        "I NEED"      — deliberately stays black/white, not
+ *                         a second brand colour, so orange keeps reading as
+ *                         special rather than "the app's palette"
+ *   orange (`match*`)    RECIPROCAL    — the one moment allowed to feel loud
  *
- * The reciprocal match is the moment the whole product exists for, so it is
- * the ONE place allowed to use a gradient and a coloured glow. A filled
- * button, a card, an avatar and a badge are all flat: if everything shouts,
- * the match moment cannot.
- *
- * Screens should reach for the semantic names (`colors.accent`), never a raw
- * hex and never a `palette.*` ramp value.
+ * Roughly 70–80% off-white/white, 15–20% black/charcoal, 5–10% orange. If
+ * every button is orange, none of them are.
  * ---------------------------------------------------------------------------
  */
 
@@ -32,62 +29,41 @@
 /* -------------------------------------------------------------------------- */
 
 export const palette = {
-  // Terracotta — primary brand, "I HAVE", primary actions.
-  terracotta50: '#FBEFE7',
-  terracotta100: '#F3D7C2',
-  terracotta200: '#E6C5A8',
-  terracotta400: '#C7774F',
-  terracotta500: '#AD5B37',
-  terracotta600: '#9A4828',
-  terracotta700: '#7A3820',
-  terracotta900: '#4C2313',
-
-  // Clay — "I NEED". A warm ochre that sits beside terracotta without competing.
-  clay50: '#FBF1E4',
-  clay100: '#F3DCB6',
-  clay200: '#E8C489',
-  clay400: '#C68A3D',
-  clay500: '#AD7328',
-  clay600: '#8C5C1E',
-  clay700: '#6B4517',
-
-  // Sage — reciprocal barter matches. The product's one moment of spectacle.
-  sage50: '#F1F4ED',
-  sage100: '#DEE6D3',
-  sage200: '#C1D0AE',
-  sage400: '#8FA377',
-  sage500: '#7E9168',
-  sage600: '#647550',
-  sage700: '#4C593D',
+  // Orange — primary brand, "I HAVE", primary actions, the one loud colour.
+  orange50: '#FFE9E3',
+  orange100: '#FFCFC2',
+  orange200: '#FFB09B',
+  orange400: '#FF5A3C',
+  orange500: '#FF3B1F',
+  orange600: '#E62F15',
+  orange700: '#B82410',
+  orange900: '#6E160A',
 
   /*
-   * Neutrals, warm cream-leaning so the canvas never reads clinical.
-   *
-   * `ground` (#F7F0E7) is the warm creamy background; `surface` (#FFFDF9) sits
-   * a perceptible step above it, so a card is legible from a hairline border
-   * alone without needing a shadow just to read as a surface.
+   * Neutrals. Warm off-white ground (never clinical white), near-black ink
+   * (never pure #000 — a hair warmer so large black fields don't read like a
+   * screen glitch), concrete grey for structural fills and texture.
    */
-  ink: '#241B16',
-  espresso800: '#3A2B22',
-  espresso700: '#4E3B2F',
-  espresso600: '#5F493A',
-  /** Lightest neutral that still passes AA for small text on the cream ground. */
-  espresso500: '#75675C',
-  /** Decorative only — fails AA for body copy. See `colors.textFaint`. */
-  espresso400: '#9C8E80',
-  espresso300: '#C2B6A6',
-  line: '#E6DCCB',
-  lineSoft: '#EFE7D9',
-  mist: '#EFE5D8',
-  ground: '#F7F0E7',
-  white: '#FFFDF9',
+  ink: '#050505',
+  charcoal: '#1A1A1A',
+  graphite: '#333333',
+  steel: '#5C5C5C',
+  concrete: '#D9D7D2',
+  concreteSoft: '#E8E6E1',
+  line: '#050505',
+  lineSoft: '#D9D7D2',
+  offWhite: '#F5F3EE',
+  white: '#FCFBF8',
 
-  // Feedback. Text-safe by default: these appear on small labels constantly.
-  red600: '#B23A2E',
-  red700: '#8C2C22',
-  red50: '#FBEBE7',
+  // Feedback. Kept out of the orange hue so they never compete with it.
+  red600: '#B3261E',
+  red700: '#8C1D17',
+  red50: '#F7E6E4',
   yellow700: '#8A5D06',
   yellow50: '#FBF1DE',
+  green700: '#2F6B3A',
+  green600: '#3B8249',
+  green50: '#E6F1E8',
   blue600: '#3D6E8C',
   blue50: '#E9F1F5',
 } as const;
@@ -98,65 +74,69 @@ export const palette = {
 
 export const colors = {
   /** App background. */
-  background: palette.ground,
+  background: palette.offWhite,
   /** Secondary background — elevated section fills, alternating rows. */
-  backgroundSecondary: palette.mist,
+  backgroundSecondary: palette.concreteSoft,
   /** Default card / sheet surface — one perceptible step above `background`. */
   surface: palette.white,
   /** Subtle filled surface (inputs at rest, chips, skeletons). */
-  surfaceMuted: palette.mist,
+  surfaceMuted: palette.concreteSoft,
   /** Pressed/hovered state for a surface that is interactive. */
-  surfaceHover: '#EFE3D3',
+  surfaceHover: palette.concrete,
   /** Deep surface used behind hero headers. */
   surfaceInverse: palette.ink,
 
-  /** Hairline rule. One border colour for the whole product. */
+  /** Structural rule. Brutalist system: the border IS the component edge. */
   border: palette.line,
   /** Even quieter divider, for rules inside an already-bordered container. */
   borderSoft: palette.lineSoft,
   /** Border on a control that has focus or is selected. */
-  borderStrong: palette.espresso300,
+  borderStrong: palette.ink,
 
   textPrimary: palette.ink,
-  textSecondary: palette.espresso500,
+  textSecondary: palette.graphite,
   /** Supporting copy. AA-compliant, unlike a low-contrast grey. */
-  textMuted: palette.espresso500,
+  textMuted: palette.steel,
   /**
    * Deliberately below AA — only for decoration that repeats information
    * already available elsewhere (a chevron, a separator dot, a placeholder
    * glyph). Never the only carrier of meaning, never body copy.
    */
-  textFaint: palette.espresso400,
+  textFaint: palette.concrete,
   textInverse: palette.white,
 
-  /** Brand / primary action / "I HAVE". */
-  accent: palette.terracotta600,
-  accentStrong: palette.terracotta700,
-  accentBright: palette.terracotta400,
-  accentSoft: palette.terracotta50,
-  accentBorder: palette.terracotta200,
-  /** Use when terracotta carries small text — passes AA on white and on tints. */
-  accentText: palette.terracotta700,
+  /** Brand / primary action / "I HAVE". The one loud colour. */
+  accent: palette.orange500,
+  accentStrong: palette.orange600,
+  accentBright: palette.orange400,
+  accentSoft: palette.orange50,
+  accentBorder: palette.orange500,
+  /** Use when orange carries small text — passes AA on white. */
+  accentText: palette.orange700,
 
-  /** "I NEED". */
-  need: palette.clay500,
-  needStrong: palette.clay700,
-  needBright: palette.clay400,
-  needSoft: palette.clay50,
-  needBorder: palette.clay200,
-  needText: palette.clay700,
+  /**
+   * "I NEED". Deliberately NOT a second brand colour — per the Swiss/
+   * neo-brutalist direction, "I NEED" stays structural (black/white) so
+   * orange keeps reading as the one special signal, not "the app's palette".
+   */
+  need: palette.ink,
+  needStrong: palette.charcoal,
+  needBright: palette.graphite,
+  needSoft: palette.concreteSoft,
+  needBorder: palette.ink,
+  needText: palette.ink,
 
-  /** Reciprocal barter match. */
-  match: palette.sage500,
-  matchStrong: palette.sage700,
-  matchBright: palette.sage400,
-  matchSoft: palette.sage50,
-  matchBorder: palette.sage200,
-  matchText: palette.sage700,
+  /** Reciprocal barter match — the one moment allowed to feel loud. */
+  match: palette.orange500,
+  matchStrong: palette.orange700,
+  matchBright: palette.orange400,
+  matchSoft: palette.orange50,
+  matchBorder: palette.orange500,
+  matchText: palette.orange700,
 
-  success: palette.sage600,
-  successSoft: palette.sage50,
-  successText: palette.sage700,
+  success: palette.green600,
+  successSoft: palette.green50,
+  successText: palette.green700,
   warning: palette.yellow700,
   warningSoft: palette.yellow50,
   warningText: palette.yellow700,
@@ -169,14 +149,14 @@ export const colors = {
   infoText: palette.blue600,
   infoBorder: '#C4D8E3',
   warningBorder: '#EAD3A6',
-  dangerBorder: '#EDC3B9',
+  dangerBorder: '#E3B6B1',
   /** Deeper pressed fill for a muted control. */
-  surfacePressed: '#E6D8C6',
+  surfacePressed: palette.concrete,
 
-  /** Keyboard focus ring. Deliberately the brand colour, never the OS blue. */
-  focus: palette.terracotta500,
+  /** Keyboard focus ring. Brand colour, never the OS blue. */
+  focus: palette.orange500,
   /** Scrim behind a modal or sheet. */
-  scrim: 'rgba(36, 27, 22, 0.44)',
+  scrim: 'rgba(5, 5, 5, 0.5)',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -186,32 +166,23 @@ export const colors = {
 /**
  * Two-stop gradients, `readonly [from, to]`, consumed by `<Gradient>`.
  *
- * Reserved, not decorative. `match` is the reciprocal-match moment; `hero` is
- * the unauthenticated splash; `ink` is a dark header. Buttons, cards, badges
- * and avatars are all flat by design — see the art-direction note at the top.
- * The `cover*` set is the fallback when an item has no photograph, where the
- * job is to make a wall of imageless cards look varied rather than broken.
+ * Reserved, not decorative — a flat brutalist system wants almost no
+ * gradients at all. `hero`/`ink` are dark ink panels (a near-flat gradient
+ * just to avoid a dead-flat black field); `match` is the one place allowed a
+ * hint of glow. The `cover*` set is the fallback when an item has no
+ * photograph — desaturated concrete/charcoal tones so a wall of imageless
+ * cards reads as industrial material, not a colour-swatch page.
  */
 export const gradients = {
-  match: [palette.sage400, palette.sage600],
-  hero: [palette.terracotta600, palette.terracotta900],
-  ink: [palette.espresso800, palette.ink],
-  /*
-   * Deterministic covers for items that have no photograph.
-   *
-   * Deliberately DESATURATED. An earlier pass used full-chroma gradients and
-   * a grid of them read as a colour-swatch page: the covers shouted over the
-   * titles, and — worse — a real photograph looked washed out next to them.
-   * The fallback has to be quieter than the thing it stands in for, so these
-   * are low-saturation warm-neutral tints that give each card a distinct
-   * identity without competing for attention.
-   */
-  cover1: ['#8A7A64', '#5C4E3B'],
-  cover2: ['#9C7A5C', '#6B4E37'],
-  cover3: ['#8A7E8C', '#5A4E5C'],
-  cover4: ['#7E8A80', '#4E5C50'],
-  cover5: ['#9C7470', '#6B4740'],
-  cover6: ['#847A6E', '#54493E'],
+  match: [palette.orange400, palette.orange700],
+  hero: [palette.charcoal, palette.ink],
+  ink: [palette.graphite, palette.ink],
+  cover1: ['#8A8A86', '#3A3A38'],
+  cover2: ['#9C9690', '#4A4542'],
+  cover3: ['#86888A', '#38393A'],
+  cover4: ['#8E8A80', '#403C36'],
+  cover5: ['#94908C', '#424040'],
+  cover6: ['#84827E', '#363432'],
 } as const;
 
 export type GradientToken = keyof typeof gradients;
@@ -247,61 +218,140 @@ export const spacing = {
 } as const;
 
 /**
- * Radius. Controls and containers are deliberately DIFFERENT: a button at the
- * same radius as the card holding it makes both read as stickers. Controls sit
- * tighter (12), containers generously soft (18), and the full pill is reserved
- * for things that are genuinely pill-shaped — filter chips, badges, avatars.
+ * Radius. Neo-brutalist: sharp by default. Controls are nearly square (4),
+ * containers get a small radius (8) just enough to not look like a browser
+ * `<div>`, and the full pill is reserved for things that are genuinely
+ * pill-shaped — filter chips, tags, status labels. Buttons are NOT pills in
+ * this system; see `Button.tsx`.
  */
 export const radii = {
   none: 0,
-  xs: 4,
-  /** Inline marks: badges on a dense row, tags, small swatches. */
-  sm: 8,
+  /** Inline marks: small swatches. */
+  xs: 2,
+  /** Badges, inline tags. */
+  sm: 4,
   /** Controls: buttons, inputs, segmented controls. */
-  md: 12,
-  /** Containers: cards, sheets, tiles. Generous — the warm redesign is soft-cornered. */
-  lg: 18,
-  xl: 24,
-  '2xl': 30,
+  md: 4,
+  /** Containers: cards, sheets, tiles. */
+  lg: 8,
+  /** Hard cap — nothing in this system rounds past 8px except the pill. */
+  xl: 8,
+  '2xl': 8,
   pill: 999,
 } as const;
 
 /**
- * Type scale.
- *
- * Three weights only — 400 regular, 500 medium, 600 semibold — plus 700 for
- * the two display sizes. The previous scale ran four sizes at weight 800,
- * which made every screen shout and left no room to emphasise anything.
- * Negative tracking is applied in proportion to size, which is what stops
- * large type reading as a browser default heading.
+ * Type scale — Swiss editorial: a handful of sizes used with intent, large
+ * display sizes allowed to dominate a screen. Negative tracking scales with
+ * size, which is what keeps big type from reading as a browser default
+ * heading. `fontFamily` pins exact weight files (Inter Tight / Inter, loaded
+ * in `apps/app/app/_layout.tsx`) — custom fonts on RN need an exact family
+ * per weight, numeric `fontWeight` alone does not reliably apply.
  */
 export const typography = {
-  hero: { fontSize: 32, lineHeight: 37, fontWeight: '700' as const, letterSpacing: -0.9 },
-  display: { fontSize: 27, lineHeight: 32, fontWeight: '700' as const, letterSpacing: -0.7 },
-  h1: { fontSize: 22, lineHeight: 28, fontWeight: '600' as const, letterSpacing: -0.45 },
-  h2: { fontSize: 18.5, lineHeight: 24, fontWeight: '600' as const, letterSpacing: -0.3 },
-  h3: { fontSize: 16, lineHeight: 21, fontWeight: '600' as const, letterSpacing: -0.2 },
-  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const, letterSpacing: -0.08 },
-  bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '600' as const, letterSpacing: -0.1 },
-  bodySm: { fontSize: 13.5, lineHeight: 19.5, fontWeight: '400' as const, letterSpacing: 0 },
+  /** The oversized editorial headline — "WHAT DO / YOU HAVE?". */
+  hero: {
+    fontSize: 44,
+    lineHeight: 46,
+    fontWeight: '800' as const,
+    letterSpacing: -1.3,
+    fontFamily: 'InterTight_800ExtraBold',
+  },
+  display: {
+    fontSize: 30,
+    lineHeight: 33,
+    fontWeight: '800' as const,
+    letterSpacing: -0.9,
+    fontFamily: 'InterTight_800ExtraBold',
+  },
+  h1: {
+    fontSize: 23,
+    lineHeight: 27,
+    fontWeight: '700' as const,
+    letterSpacing: -0.5,
+    fontFamily: 'InterTight_700Bold',
+  },
+  h2: {
+    fontSize: 19,
+    lineHeight: 23,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
+    fontFamily: 'InterTight_700Bold',
+  },
+  h3: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '600' as const,
+    letterSpacing: -0.2,
+    fontFamily: 'InterTight_600SemiBold',
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '400' as const,
+    letterSpacing: -0.05,
+    fontFamily: 'Inter_400Regular',
+  },
+  bodyStrong: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600' as const,
+    letterSpacing: -0.08,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  bodySm: {
+    fontSize: 13.5,
+    lineHeight: 19,
+    fontWeight: '400' as const,
+    letterSpacing: 0,
+    fontFamily: 'Inter_400Regular',
+  },
   /** Form labels, inline actions, chip text. */
-  label: { fontSize: 13, lineHeight: 17, fontWeight: '500' as const, letterSpacing: -0.05 },
+  label: {
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: '600' as const,
+    letterSpacing: 0,
+    fontFamily: 'Inter_600SemiBold',
+  },
   /** Metadata, helper text, timestamps. */
-  caption: { fontSize: 12, lineHeight: 16, fontWeight: '400' as const, letterSpacing: 0 },
+  caption: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400' as const,
+    letterSpacing: 0,
+    fontFamily: 'Inter_400Regular',
+  },
   /**
-   * All-caps eyebrow. Used sparingly — one per section at most. Tracking is
-   * wide because caps at this size are unreadable without it.
+   * All-caps eyebrow / section number ("01 — SOMETHING I HAVE"). Wide
+   * tracking because bold caps at this size are unreadable without it — this
+   * is the single most load-bearing text style in the whole redesign.
    */
-  overline: { fontSize: 10.5, lineHeight: 14, fontWeight: '600' as const, letterSpacing: 0.6 },
+  overline: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '700' as const,
+    letterSpacing: 1.2,
+    fontFamily: 'InterTight_700Bold',
+  },
   /**
    * Money and counts. Pair with `<Text numeric>`, which adds tabular figures
-   * so a column of numbers does not jitter as digits change. The figure
-   * setting lives on the component rather than here because this module is
-   * also imported by `tailwind.config.js` and must stay free of React Native
-   * types.
+   * so a column of numbers does not jitter as digits change.
    */
-  numeric: { fontSize: 15, lineHeight: 20, fontWeight: '600' as const, letterSpacing: -0.1 },
-  numericLarge: { fontSize: 24, lineHeight: 29, fontWeight: '600' as const, letterSpacing: -0.5 },
+  numeric: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '700' as const,
+    letterSpacing: -0.1,
+    fontFamily: 'InterTight_700Bold',
+  },
+  numericLarge: {
+    fontSize: 26,
+    lineHeight: 30,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
+    fontFamily: 'InterTight_800ExtraBold',
+  },
 } as const;
 
 export type TypographyVariant = keyof typeof typography;
@@ -311,58 +361,51 @@ export type TypographyVariant = keyof typeof typography;
 /* -------------------------------------------------------------------------- */
 
 /**
- * Elevation presets.
- *
- * Restrained on purpose. With real separation between `background` and
- * `surface`, a card is legible from its hairline border alone, so a shadow's
- * only job is to say "this floats above the page" — sheets, sticky bars, menus.
- * Everything is a tight, near-vertical, low-opacity shadow; nothing blooms.
+ * Elevation presets — deliberately minimal. Structure comes from the 1–2px
+ * black border, not a shadow; a shadow here only says "this is genuinely
+ * floating above the page" (a sheet, a sticky bar), and even then it stays
+ * tight and nearly flat rather than soft and diffuse — a soft blurred shadow
+ * reads as Material/iOS-default, which is exactly what this system avoids.
  */
-/** Warm espresso shadow colour — a black shadow on cream reads grey and dirty. */
-const SHADOW = '#5A3A22';
-
 export const shadows = {
   none: {},
   /** Barely there. A card that should feel attached to the page. */
   xs: {
-    shadowColor: SHADOW,
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
+    shadowColor: palette.ink,
+    shadowOpacity: 0.08,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  /** A resting card on the cream ground — soft, warm, slightly diffused. */
+  /** A resting card — tight, hard-edged, almost no blur. */
   sm: {
-    shadowColor: SHADOW,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: palette.ink,
+    shadowOpacity: 0.14,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
   /** A lifted card — hovered, held, or a hero tile. */
   md: {
-    shadowColor: SHADOW,
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    shadowColor: palette.ink,
+    shadowOpacity: 0.18,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 4 },
+    elevation: 6,
   },
   /** Modals, sheets, floating objects. */
   lg: {
-    shadowColor: SHADOW,
-    shadowOpacity: 0.16,
-    shadowRadius: 36,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 14,
+    shadowColor: palette.ink,
+    shadowOpacity: 0.22,
+    shadowRadius: 0,
+    shadowOffset: { width: 3, height: 6 },
+    elevation: 10,
   },
 } as const;
 
 /**
- * Coloured glow.
- *
- * Deliberately NOT used by buttons any more — a halo under every primary
- * action is the fastest way to make software look generated. Kept for the
- * reciprocal-match surfaces, where the product genuinely wants to celebrate.
+ * Coloured glow. Kept for the reciprocal-match surface only — the one place
+ * this system allows a hint of spectacle.
  */
 export function glow(color: string, opacity = 0.22) {
   return {
@@ -375,8 +418,8 @@ export function glow(color: string, opacity = 0.22) {
 }
 
 /**
- * Focus ring for keyboard navigation. Two rings — brand colour plus a white
- * gap — so it stays visible on both light surfaces and coloured buttons.
+ * Focus ring for keyboard navigation. Brand orange plus a white gap, so it
+ * stays visible on both light surfaces and the black structural elements.
  */
 export const focusRing = {
   outlineStyle: 'solid',
@@ -430,14 +473,15 @@ export const layout = {
   /** Tighter gutter for dense rows inside an already-padded container. */
   gutterTight: spacing.lg,
   /**
-   * Bottom padding on every tab screen. The tab bar FLOATS over the content
-   * (see apps/app/src/components/nav/PandamTabBar.tsx: 68 tall, lifted by the
-   * safe-area inset or 12), so the last item needs this much room to scroll
-   * clear of it.
+   * Bottom padding on every tab screen. The tab bar sits ABOVE the content
+   * (see apps/app/src/components/nav/PandamTabBar.tsx), so the last item
+   * needs this much room to scroll clear of it.
    */
-  tabBarInset: 116,
-  /** Hairline width. One value, so borders never disagree across components. */
+  tabBarInset: 104,
+  /** Hairline structural border — the default border width everywhere. */
   hairline: 1,
+  /** Heavier structural border, for the elements that should anchor a screen. */
+  borderThick: 2,
 } as const;
 
 export type ColorToken = keyof typeof colors;

@@ -62,12 +62,10 @@ interface Spec {
 }
 
 /**
- * Solid fills, not gradients.
- *
- * A gradient on every filled button is the single fastest way to make an
- * interface look generated, and it fights the one place PANDAM genuinely
- * wants spectacle — the reciprocal match. So `primary` is one confident
- * terracotta, and `match` keeps a lift as the exception.
+ * Solid fills, not gradients. Neo-brutalist: every button carries a 1.5px
+ * black structural border, even filled ones — the border is what makes the
+ * shape read as a deliberate object, not a soft default control. `match`
+ * keeps a (now very restrained) lift as the one surface allowed spectacle.
  */
 const SPEC: Record<Variant, Spec> = {
   primary: {
@@ -75,18 +73,21 @@ const SPEC: Record<Variant, Spec> = {
     bgHover: colors.accentStrong,
     bgActive: colors.accentStrong,
     fg: colors.textInverse,
+    border: colors.border,
   },
   need: {
     bg: colors.need,
     bgHover: colors.needStrong,
     bgActive: colors.needStrong,
     fg: colors.textInverse,
+    border: colors.border,
   },
   match: {
     bg: colors.match,
     bgHover: colors.matchStrong,
     bgActive: colors.matchStrong,
     fg: colors.textInverse,
+    border: colors.border,
     elevated: true,
   },
   secondary: {
@@ -102,6 +103,7 @@ const SPEC: Record<Variant, Spec> = {
     bgHover: colors.surfaceHover,
     bgActive: colors.surfacePressed,
     fg: colors.textPrimary,
+    border: colors.border,
   },
   ghost: {
     bg: 'transparent',
@@ -122,12 +124,14 @@ const SPEC: Record<Variant, Spec> = {
     bgHover: colors.dangerStrong,
     bgActive: colors.dangerStrong,
     fg: colors.textInverse,
+    border: colors.border,
   },
   inverse: {
     bg: colors.surface,
     bgHover: colors.accentSoft,
     bgActive: colors.accentSoft,
     fg: colors.accentText,
+    border: colors.border,
   },
 };
 
@@ -176,14 +180,14 @@ export function Button({
           height: pad.h,
           paddingHorizontal: pad.px,
           backgroundColor: spec.bg,
-          borderRadius: size === 'sm' ? radii.md : radii.pill,
-          borderWidth: spec.border ? 1 : 0,
+          borderRadius: radii.md,
+          borderWidth: spec.border ? 1.5 : 0,
           borderColor: spec.border ?? 'transparent',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
         },
-        (spec.elevated || variant === 'primary') && !isDisabled && size !== 'sm'
-          ? shadows.sm
-          : null,
+        // Structure comes from the border now, not a shadow — `match` keeps
+        // a small lift as the one surface allowed to feel like it floats.
+        spec.elevated && !isDisabled && size !== 'sm' ? shadows.xs : null,
         // Disabled reads as "not available now", so it keeps its shape and
         // loses contrast rather than disappearing.
         isDisabled && { opacity: 0.42 },

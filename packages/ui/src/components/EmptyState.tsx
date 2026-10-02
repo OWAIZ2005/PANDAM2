@@ -95,13 +95,13 @@ export function EmptyState({
               width: inline ? 34 : 46,
               height: 6,
               borderRadius: radii.pill,
-              backgroundColor: 'rgba(90,58,34,0.10)',
+              backgroundColor: 'rgba(5,5,5,0.08)',
             }}
           />
         </View>
       ) : null}
 
-      <Text variant={inline ? 'h3' : 'h2'} center>
+      <Text variant={inline ? 'h3' : 'display'} center>
         {title}
       </Text>
 

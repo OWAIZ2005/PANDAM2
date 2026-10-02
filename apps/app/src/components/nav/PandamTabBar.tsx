@@ -21,8 +21,8 @@ import { useMatches } from '@/lib/hooks/useMatches';
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 type IconName = keyof typeof Ionicons.glyphMap;
 
-/** Content height of the floating bar; the safe-area inset is added as margin. */
-export const TAB_BAR_HEIGHT = 68;
+/** Content height of the bar; the safe-area inset is added as padding. */
+export const TAB_BAR_HEIGHT = 56;
 const CREATE = 'create';
 
 const ICONS: Record<string, IconName> = {
@@ -31,11 +31,12 @@ const ICONS: Record<string, IconName> = {
   matches: 'sparkles',
   profile: 'person',
 };
+/** Numbered editorial labels — "a physical control panel", not icon-only chrome. */
 const LABELS: Record<string, string> = {
-  index: 'Home',
-  discover: 'Discover',
-  matches: 'Matches',
-  profile: 'Profile',
+  index: '01 HOME',
+  discover: '02 DISCOVER',
+  matches: '03 MATCHES',
+  profile: '04 PROFILE',
 };
 
 const SPRING = { damping: 17, stiffness: 210, mass: 0.8 };
@@ -46,7 +47,7 @@ function tap() {
 
 /* -------------------------------------------------------------------------- */
 
-/** A navigation tab: icon + label, which pops on press and brightens when active. */
+/** A navigation tab: icon + numbered label, on a sliding orange block when active. */
 function TabItem({
   name,
   focused,
@@ -69,10 +70,10 @@ function TabItem({
   }, [focused, motionOK, on]);
 
   const icon = useAnimatedStyle(() => ({
-    transform: [{ translateY: -on.value * 1.5 }, { scale: pop.value }],
+    transform: [{ scale: pop.value }],
   }));
   const label = useAnimatedStyle(() => ({
-    opacity: interpolate(on.value, [0, 1], [0.55, 1]),
+    opacity: interpolate(on.value, [0, 1], [0.7, 1]),
   }));
 
   const press = () => {
@@ -88,6 +89,8 @@ function TabItem({
     onPress();
   };
 
+  const fg = focused ? palette.white : colors.textPrimary;
+
   return (
     <Pressable
       accessibilityRole="tab"
@@ -100,33 +103,31 @@ function TabItem({
         alignItems: 'center',
         justifyContent: 'center',
         height: TAB_BAR_HEIGHT,
-        gap: 3,
+        gap: 2,
       }}
     >
       <Animated.View style={icon}>
         <Ionicons
           name={focused ? ICONS[name]! : (`${ICONS[name]}-outline` as IconName)}
-          size={22}
-          color={focused ? palette.white : 'rgba(255,253,249,0.62)'}
+          size={19}
+          color={fg}
         />
         {badge ? (
           <CountBadge
             value={badge}
             color={colors.match}
-            ringColor={colors.surfaceInverse}
-            // Anchored from the LEFT at the icon's upper-right, so a wider "9+"
-            // grows away from the glyph instead of back over it.
-            style={{ position: 'absolute', top: -6, left: 13 }}
+            ringColor={focused ? colors.accent : colors.background}
+            style={{ position: 'absolute', top: -6, left: 11 }}
           />
         ) : null}
       </Animated.View>
       <Animated.View style={label}>
         <Text
           style={{
-            fontSize: 10.5,
-            fontWeight: focused ? '800' : '600',
-            letterSpacing: 0.2,
-            color: focused ? palette.white : 'rgba(255,253,249,0.62)',
+            fontSize: 8.5,
+            fontFamily: 'InterTight_700Bold',
+            letterSpacing: 0.4,
+            color: fg,
           }}
         >
           {LABELS[name]}
@@ -136,7 +137,7 @@ function TabItem({
   );
 }
 
-/** The raised centre action: a terracotta disc cut into the bar that turns into ✕ when open. */
+/** The raised centre action: a black-bordered orange square that overlaps the bar. */
 function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => void }) {
   const motionOK = useMotionOK();
   const on = useSharedValue(focused ? 1 : 0);
@@ -148,12 +149,12 @@ function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => v
     );
   }, [focused, motionOK, on]);
 
-  const disc = useAnimatedStyle(() => ({
-    transform: [{ scale: press.value }, { rotate: `${on.value * 135}deg` }],
+  const square = useAnimatedStyle(() => ({
+    transform: [{ scale: press.value }, { rotate: `${on.value * 45}deg` }],
   }));
 
   return (
-    <View style={{ width: 72, alignItems: 'center' }}>
+    <View style={{ width: 68, alignItems: 'center' }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Add something"
@@ -171,14 +172,15 @@ function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => v
           onPress();
         }}
         hitSlop={8}
-        style={{ marginTop: -26 }}
+        style={{ marginTop: -22 }}
       >
-        {/* The ring in the page colour makes the disc look cut into the bar. */}
+        {/* The off-white ring makes the square look cut into — and raised
+            above — the bar, like a punch card. */}
         <View
           style={{
-            width: 66,
-            height: 66,
-            borderRadius: 33,
+            width: 60,
+            height: 60,
+            borderRadius: 14,
             backgroundColor: colors.background,
             alignItems: 'center',
             justifyContent: 'center',
@@ -187,22 +189,24 @@ function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => v
           <Animated.View
             style={[
               {
-                width: 56,
-                height: 56,
-                borderRadius: 28,
+                width: 52,
+                height: 52,
+                borderRadius: 10,
                 backgroundColor: colors.accent,
+                borderWidth: 1.5,
+                borderColor: colors.border,
                 alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: palette.terracotta600,
-                shadowOpacity: 0.45,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 10,
+                shadowColor: colors.border,
+                shadowOpacity: 0.3,
+                shadowRadius: 0,
+                shadowOffset: { width: 2, height: 3 },
+                elevation: 8,
               },
-              disc,
+              square,
             ]}
           >
-            <Ionicons name="add" size={30} color={palette.white} />
+            <Ionicons name="add" size={28} color={palette.white} />
           </Animated.View>
         </View>
       </Pressable>
@@ -213,11 +217,12 @@ function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => v
 /* -------------------------------------------------------------------------- */
 
 /**
- * PANDAM's navigation: a floating espresso bar that hovers above the content,
- * with a terracotta pill that springs from tab to tab behind the active icon,
- * a raised create disc cut into the middle, a live match badge, and a haptic
- * tick on every change. Navigation behaviour is React Navigation's own
- * (`tabPress` event, `navigate`), so routes and deep links are unchanged.
+ * PANDAM's navigation: a flat off-white editorial control panel, flush with
+ * the bottom edge, with a 2px black top border, a sliding sharp-cornered
+ * orange block behind the active tab, a raised black-bordered "+" square cut
+ * into the middle, a live match badge, and a haptic tick on every change.
+ * Navigation behaviour is React Navigation's own (`tabPress` event,
+ * `navigate`), so routes and deep links are unchanged.
  */
 export function PandamTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
@@ -231,8 +236,8 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
   const focusedName = routes[state.index]?.name;
 
   // Slot geometry: four equal tabs around a fixed-width centre slot.
-  const createW = 72;
-  const slotW = rowW > 0 ? (rowW - 8 - createW) / 4 : 0; // 8 = row padding
+  const createW = 68;
+  const slotW = rowW > 0 ? (rowW - createW) / 4 : 0;
   const slotX = (name: string) => {
     const order = routes.map((r) => r.name).filter((n) => n !== CREATE);
     const i = order.indexOf(name);
@@ -245,7 +250,7 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
     if (!slotW || !focusedName) return;
     const onTab = focusedName !== CREATE;
     if (onTab) {
-      const x = slotX(focusedName) + 6;
+      const x = slotX(focusedName) + 4;
       pillX.set(motionOK && pillOn.value > 0 ? withSpring(x, SPRING) : x);
     }
     pillOn.set(motionOK ? withTiming(onTab ? 1 : 0, { duration: 160 }) : onTab ? 1 : 0);
@@ -254,7 +259,7 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
 
   const pill = useAnimatedStyle(() => ({
     opacity: pillOn.value,
-    transform: [{ translateX: pillX.value }, { scaleX: 0.8 + pillOn.value * 0.2 }],
+    transform: [{ translateX: pillX.value }],
   }));
 
   const go = (routeName: string, key: string, focused: boolean) => {
@@ -262,50 +267,59 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
     if (!focused && !event.defaultPrevented) navigation.navigate(routeName);
   };
 
-  const maxW = Math.min(screenW - 24, 520);
+  const maxW = Math.min(screenW, 720);
 
   return (
     <View
       pointerEvents="box-none"
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: Math.max(insets.bottom, 12),
-        alignItems: 'center',
-      }}
+      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' }}
     >
       <View
         style={{
           width: maxW,
-          height: TAB_BAR_HEIGHT,
-          borderRadius: 26,
-          backgroundColor: colors.surfaceInverse,
-          borderWidth: 1,
-          borderColor: 'rgba(255,253,249,0.08)',
-          shadowColor: '#1A120D',
-          shadowOpacity: 0.32,
-          shadowRadius: 24,
-          shadowOffset: { width: 0, height: 12 },
-          elevation: 18,
+          paddingBottom: insets.bottom,
+          backgroundColor: colors.background,
+          borderTopWidth: 2,
+          borderTopColor: colors.border,
         }}
       >
         <View
           onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
-          style={{ flex: 1, flexDirection: 'row', paddingHorizontal: 4 }}
+          style={{ height: TAB_BAR_HEIGHT, flexDirection: 'row' }}
         >
-          {/* sliding active pill */}
+          {/* Hairline dividers between every cell — a structured grid strip,
+              not a borderless row of icons. */}
+          {slotW > 0
+            ? [slotW, slotW * 2, slotW * 2 + createW, slotW * 3 + createW].map((x) => (
+                <View
+                  key={x}
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    left: x,
+                    top: 0,
+                    bottom: 0,
+                    width: 1,
+                    backgroundColor: colors.border,
+                  }}
+                />
+              ))
+            : null}
+
+          {/* sliding active block */}
           {slotW > 0 ? (
             <Animated.View
               pointerEvents="none"
               style={[
                 {
                   position: 'absolute',
-                  left: 4,
-                  top: 8,
-                  width: slotW - 12,
-                  height: TAB_BAR_HEIGHT - 18,
-                  borderRadius: 18,
+                  left: 0,
+                  top: 6,
+                  width: slotW - 8,
+                  height: TAB_BAR_HEIGHT - 12,
+                  borderRadius: 6,
+                  borderWidth: 1.5,
+                  borderColor: colors.border,
                   backgroundColor: colors.accent,
                 },
                 pill,

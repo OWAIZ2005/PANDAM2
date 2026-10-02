@@ -158,13 +158,13 @@ export function TradeStage({
     >
       <OrganicShape
         size={240}
-        color={palette.terracotta50}
+        color={palette.orange50}
         rotate={-14}
         style={{ left: -50, top: -30 }}
       />
       <OrganicShape
         size={200}
-        color={palette.clay50}
+        color={palette.concreteSoft}
         rotate={22}
         style={{ right: -40, bottom: -40 }}
       />

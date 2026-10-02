@@ -108,8 +108,13 @@ export function MatchMoment({
         overflow: 'hidden',
       }}
     >
-      <OrganicShape size={300} color={palette.terracotta50} rotate={-10} style={{ top: 10 }} />
-      <OrganicShape size={160} color={palette.sage50} rotate={20} style={{ right: 10, top: 150 }} />
+      <OrganicShape size={300} color={palette.orange50} rotate={-10} style={{ top: 10 }} />
+      <OrganicShape
+        size={160}
+        color={palette.orange50}
+        rotate={20}
+        style={{ right: 10, top: 150 }}
+      />
 
       <View
         style={{ height: size + 40, width: '100%', alignItems: 'center', justifyContent: 'center' }}

@@ -6,7 +6,7 @@ const PARTICLES = Array.from({ length: 14 }, (_, i) => ({
   angle: (i / 14) * Math.PI * 2 + (i % 2 ? 0.2 : -0.1),
   dist: 70 + (i % 4) * 22,
   size: 5 + (i % 3) * 3,
-  tint: i % 3 === 0 ? palette.terracotta200 : i % 3 === 1 ? palette.terracotta400 : palette.clay200,
+  tint: i % 3 === 0 ? palette.orange200 : i % 3 === 1 ? palette.orange400 : palette.concrete,
 }));
 
 function Particle({ p, burst }: { p: (typeof PARTICLES)[number]; burst: SharedValue<number> }) {

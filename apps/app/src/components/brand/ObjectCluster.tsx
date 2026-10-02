@@ -23,7 +23,7 @@ export function ObjectCluster({
 }) {
   return (
     <View style={{ width: 220, height: 150, alignItems: 'center', justifyContent: 'center' }}>
-      <OrganicShape size={190} color={palette.terracotta50} rotate={-8} style={{ top: 0 }} />
+      <OrganicShape size={190} color={palette.orange50} rotate={-8} style={{ top: 0 }} />
       <FloatingObject
         delay={0}
         amplitude={6}

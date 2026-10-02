@@ -136,9 +136,9 @@ function Glow({ size, color, style }: { size: number; color: string; style: obje
  * page edges and top, away from where body text runs, and is decorative only.
  */
 export function PandamBackground({ variant = 'quiet' }: { variant?: Variant }) {
-  const T = palette.terracotta50;
-  const C = palette.clay50;
-  const S = palette.sage50;
+  const T = palette.orange50;
+  const C = palette.concreteSoft;
+  const S = palette.orange50;
   const shapes: Record<Variant, ReactNode> = {
     home: (
       <>
@@ -215,8 +215,8 @@ export function PandamBackground({ variant = 'quiet' }: { variant?: Variant }) {
           direction="vertical"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 360 }}
         />
-        <Glow size={520} color={palette.terracotta400} style={{ top: -260, right: -200 }} />
-        <Glow size={420} color={palette.clay400} style={{ top: 300, left: -260 }} />
+        <Glow size={520} color={palette.orange400} style={{ top: -260, right: -200 }} />
+        <Glow size={420} color={palette.steel} style={{ top: 300, left: -260 }} />
       </>
     ),
   };

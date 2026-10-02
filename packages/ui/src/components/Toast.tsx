@@ -64,16 +64,16 @@ const KIND: Record<ToastKind, { bg: string; border: string; glyph: string; fg: s
   // layer above the page rather than another card in it.
   success: {
     bg: colors.surfaceInverse,
-    border: palette.espresso700,
+    border: palette.charcoal,
     glyph: '✓',
-    fg: palette.sage200,
+    fg: palette.orange200,
   },
-  error: { bg: '#3A1B16', border: '#5E2A22', glyph: '!', fg: palette.terracotta200 },
+  error: { bg: '#3A1B16', border: '#5E2A22', glyph: '!', fg: palette.orange200 },
   info: {
     bg: colors.surfaceInverse,
-    border: palette.espresso700,
+    border: palette.charcoal,
     glyph: 'i',
-    fg: palette.espresso300,
+    fg: palette.concrete,
   },
 };
 
