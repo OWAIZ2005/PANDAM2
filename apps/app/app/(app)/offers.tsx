@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { type OfferView } from '@pandam/types';
 import {
   Avatar,
   Badge,
+  Chip,
   EmptyState,
   GroupedList,
   ListRow,
@@ -41,9 +42,19 @@ const STATUS_LABEL: Record<OfferView['status'], string> = {
   expired: 'Expired',
 };
 
+type IncomingFilter = 'all' | 'pending' | 'accepted' | 'rejected';
+
+const INCOMING_FILTER_LABEL: Record<IncomingFilter, string> = {
+  all: 'All',
+  pending: 'Pending',
+  accepted: 'Accepted',
+  rejected: 'Declined',
+};
+
 export default function OffersScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<'incoming' | 'outgoing'>('incoming');
+  const [incomingFilter, setIncomingFilter] = useState<IncomingFilter>('all');
   const incoming = demoMergeList(
     useIncomingOffers(),
     demoOffers.filter((o) => !o.isMine),
@@ -52,11 +63,24 @@ export default function OffersScreen() {
     useOutgoingOffers(),
     demoOffers.filter((o) => o.isMine),
   );
-  const active = tab === 'incoming' ? incoming : outgoing;
+  const active =
+    tab === 'incoming'
+      ? {
+          ...incoming,
+          data:
+            incomingFilter === 'all'
+              ? incoming.data
+              : incoming.data?.filter((o) => o.status === incomingFilter),
+        }
+      : outgoing;
 
   /* A count on the received tab: an unanswered offer is the one thing on this
      screen that needs DOING rather than just reading. */
   const pendingIncoming = (incoming.data ?? []).filter((o) => o.status === 'pending').length;
+  const incomingCount = (status: IncomingFilter) =>
+    status === 'all'
+      ? (incoming.data ?? []).length
+      : (incoming.data ?? []).filter((o) => o.status === status).length;
 
   return (
     <Screen padded={false}>
@@ -79,9 +103,34 @@ export default function OffersScreen() {
             { value: 'outgoing', label: 'Sent' },
           ]}
           value={tab}
-          onChange={setTab}
+          onChange={(v) => {
+            setTab(v);
+            if (v === 'outgoing') setIncomingFilter('all');
+          }}
         />
       </View>
+
+      {tab === 'incoming' ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginTop: spacing.md }}
+          contentContainerStyle={{
+            paddingHorizontal: layout.gutter,
+            gap: spacing.sm,
+          }}
+        >
+          {(['all', 'pending', 'accepted', 'rejected'] as const).map((status) => (
+            <Chip
+              key={status}
+              label={INCOMING_FILTER_LABEL[status]}
+              selected={incomingFilter === status}
+              count={incomingCount(status)}
+              onPress={() => setIncomingFilter(status)}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
 
       <GroupedList
         data={active.data ?? []}
