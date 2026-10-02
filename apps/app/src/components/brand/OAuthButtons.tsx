@@ -20,7 +20,17 @@ import { isAppleSignInAvailable, signInWithApple, signInWithGoogle } from '@/lib
  * lib/auth/oauth.ts throws a clear "not configured" error otherwise, shown
  * here as an inline notice rather than a silent failure.
  */
-export function OAuthButtons({ onSuccess }: { onSuccess: () => void }) {
+export function OAuthButtons({
+  onSuccess,
+  appearance = 'default',
+  height = 56,
+}: {
+  onSuccess: () => void;
+  /** `solid` is the editorial login: one full-width black Google button. */
+  appearance?: 'default' | 'solid';
+  /** Height of the solid Google button. */
+  height?: number;
+}) {
   const toast = useToast();
   const oauthLogin = useOAuthLogin();
   const [appleReady, setAppleReady] = useState(false);
@@ -36,6 +46,8 @@ export function OAuthButtons({ onSuccess }: { onSuccess: () => void }) {
       active = false;
     };
   }, []);
+
+  const solid = appearance === 'solid';
 
   const run = async (provider: 'google' | 'apple') => {
     setError(null);
@@ -69,17 +81,26 @@ export function OAuthButtons({ onSuccess }: { onSuccess: () => void }) {
       <Row gap="sm">
         <View style={{ flex: 1 }}>
           <Button
-            label="Google"
-            variant="secondary"
+            label={solid ? 'Continue with Google' : 'Google'}
+            variant={solid ? 'need' : 'secondary'}
+            style={
+              solid ? { height, backgroundColor: '#111111', borderColor: '#111111' } : undefined
+            }
             size="lg"
             fullWidth
             loading={pending === 'google'}
             disabled={pending !== null}
             onPress={() => void run('google')}
-            leftIcon={<Ionicons name="logo-google" size={17} color={colors.textPrimary} />}
+            leftIcon={
+              <Ionicons
+                name="logo-google"
+                size={17}
+                color={solid ? colors.textInverse : colors.textPrimary}
+              />
+            }
           />
         </View>
-        {appleReady ? (
+        {appleReady && !solid ? (
           <View style={{ flex: 1 }}>
             <Button
               label="Apple"
@@ -100,6 +121,18 @@ export function OAuthButtons({ onSuccess }: { onSuccess: () => void }) {
           </View>
         ) : null}
       </Row>
+      {appleReady && solid ? (
+        <Button
+          label="Continue with Apple"
+          variant="secondary"
+          size="lg"
+          fullWidth
+          loading={pending === 'apple'}
+          disabled={pending !== null}
+          onPress={() => void run('apple')}
+          leftIcon={<Ionicons name="logo-apple" size={18} color={colors.textPrimary} />}
+        />
+      ) : null}
       {error ? (
         <Notice
           kind="danger"
@@ -113,14 +146,14 @@ export function OAuthButtons({ onSuccess }: { onSuccess: () => void }) {
 }
 
 /** "or" divider between social sign-in and the email/password form. */
-export function OAuthDivider() {
+export function OAuthDivider({ ruleColor = colors.border }: { ruleColor?: string }) {
   return (
     <Row gap="sm" align="center">
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: ruleColor }} />
       <Text variant="caption" tone="muted">
         or
       </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: ruleColor }} />
     </Row>
   );
 }
