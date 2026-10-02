@@ -17,7 +17,11 @@
       "adaptiveIcon": {
         "backgroundColor": "#1E7A4C"
       },
-      "permissions": ["android.permission.POST_NOTIFICATIONS"]
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -45,15 +49,18 @@
           "cameraPermission": "PANDAM uses your front camera for a one-time face verification selfie.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "REPLACE_ME"
+        "projectId": "c8d0c30c-e793-4f4b-8e7f-d5f95dbb310c"
       }
-    }
+    },
+    "owner": "mohamedbasheer"
   }
 }

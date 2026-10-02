@@ -21,6 +21,7 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@expo/ngrok": "4",
     "@pandam/config": "workspace:*",
     "eslint": "^8.57.1",
     "prettier": "^3.4.2",
