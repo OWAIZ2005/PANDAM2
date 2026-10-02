@@ -40,6 +40,7 @@ export function AvatarPicker({
   uri,
   size = 88,
   busy = false,
+  variant = 'avatar',
   onPicked,
 }: {
   name: string;
@@ -47,6 +48,8 @@ export function AvatarPicker({
   uri?: string | null;
   size?: number;
   busy?: boolean;
+  /** `add` renders a square "+" trigger that opens the same picker. */
+  variant?: 'avatar' | 'add';
   onPicked: (uri: string) => void;
 }) {
   const choose = async () => {
@@ -68,6 +71,28 @@ export function AvatarPicker({
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
+
+  if (variant === 'add') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={uri ? 'Change profile photo' : 'Add a profile photo'}
+        onPress={() => void choose()}
+        hitSlop={6}
+        style={{
+          width: size,
+          height: size,
+          borderWidth: 1,
+          borderRadius: 8,
+          borderColor: '#111111',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Ionicons name="add" size={Math.round(size * 0.5)} color="#111111" />
+      </Pressable>
+    );
+  }
 
   const badge = Math.round(size * 0.34);
   return (

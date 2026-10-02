@@ -1,12 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Image, Platform, View } from 'react-native';
 
 import { Button, Notice, Row, Stack, Text, colors, useToast } from '@pandam/ui';
 
 import { ApiError } from '@/lib/api/client';
 import { useOAuthLogin } from '@/lib/auth/hooks';
 import { isAppleSignInAvailable, signInWithApple, signInWithGoogle } from '@/lib/auth/oauth';
+
+/** Google's official multicolour "G", bundled locally so it needs no network. */
+const GOOGLE_G = require('../../../assets/images/google-g.png') as number;
 
 /**
  * "Continue with Google" / "Continue with Apple" — the single shared control
@@ -27,7 +30,7 @@ export function OAuthButtons({
 }: {
   onSuccess: () => void;
   /** `solid` is the editorial login: one full-width black Google button. */
-  appearance?: 'default' | 'solid';
+  appearance?: 'default' | 'solid' | 'outline';
   /** Height of the solid Google button. */
   height?: number;
 }) {
@@ -48,6 +51,7 @@ export function OAuthButtons({
   }, []);
 
   const solid = appearance === 'solid';
+  const outline = appearance === 'outline';
 
   const run = async (provider: 'google' | 'apple') => {
     setError(null);
@@ -81,10 +85,14 @@ export function OAuthButtons({
       <Row gap="sm">
         <View style={{ flex: 1 }}>
           <Button
-            label={solid ? 'Continue with Google' : 'Google'}
+            label={solid || outline ? 'Continue with Google' : 'Google'}
             variant={solid ? 'need' : 'secondary'}
             style={
-              solid ? { height, backgroundColor: '#111111', borderColor: '#111111' } : undefined
+              solid
+                ? { height, backgroundColor: '#111111', borderColor: '#111111' }
+                : outline
+                  ? { height, backgroundColor: '#FFFFFF', borderColor: '#111111' }
+                  : undefined
             }
             size="lg"
             fullWidth
@@ -92,15 +100,24 @@ export function OAuthButtons({
             disabled={pending !== null}
             onPress={() => void run('google')}
             leftIcon={
-              <Ionicons
-                name="logo-google"
-                size={17}
-                color={solid ? colors.textInverse : colors.textPrimary}
-              />
+              outline ? (
+                // Google's own multicolour "G" (brand guidelines forbid recolouring it).
+                <Image
+                  source={GOOGLE_G}
+                  accessibilityIgnoresInvertColors
+                  style={{ width: 18, height: 18 }}
+                />
+              ) : (
+                <Ionicons
+                  name="logo-google"
+                  size={17}
+                  color={solid ? colors.textInverse : colors.textPrimary}
+                />
+              )
             }
           />
         </View>
-        {appleReady && !solid ? (
+        {appleReady && !solid && !outline ? (
           <View style={{ flex: 1 }}>
             <Button
               label="Apple"
@@ -121,7 +138,7 @@ export function OAuthButtons({
           </View>
         ) : null}
       </Row>
-      {appleReady && solid ? (
+      {appleReady && (solid || outline) ? (
         <Button
           label="Continue with Apple"
           variant="secondary"
