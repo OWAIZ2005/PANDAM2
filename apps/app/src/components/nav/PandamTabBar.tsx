@@ -104,6 +104,10 @@ function TabItem({
         justifyContent: 'center',
         height: TAB_BAR_HEIGHT,
         gap: 2,
+        // thin Swiss rules between the cells of the nav grid
+        borderLeftWidth: name === 'index' ? 0 : 1,
+        borderRightWidth: name === 'discover' ? 1 : 0,
+        borderColor: '#D9D9D9',
       }}
     >
       <Animated.View style={icon}>

@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ComponentProps, useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 
 import { type Category } from '@pandam/types';
 import { Chip, Press, Rail, Text, colors, radii, spacing } from '@pandam/ui';
 
+import { categoryImage } from '@/lib/homeAssets';
 import { categoryIcon } from '@/lib/icons';
 
 export interface CategoryFilterProps {
@@ -72,83 +73,88 @@ export interface CategoryGridProps {
   onAdd?: () => void;
 }
 
-const GRID_GAP = spacing.md;
+const GRID_GAP = 8;
 /** Width of the tile's icon box; labels get a fixed two-line slot beneath. */
 const LABEL_LINES = 2;
 const LABEL_LINE_HEIGHT = 15;
 
 /**
- * The browse grid on Home.
- *
- * Every tile is the SAME width (measured from the container, never flexGrow),
- * so columns line up and a short last row does not stretch. The label always
- * reserves two lines, so a long name ("Musical Instruments") wraps without
- * pushing its row taller than its neighbours, and never clips. Neutral tiles
- * let the icon identify the category; the optional Add tile is the one
- * accent-outlined tile, so it reads as an action rather than a category.
+ * The browse grid on Home — a Swiss/brutalist grid of rectangular, thin-bordered
+ * tiles. Categories with a product photograph (see `categoryImage`) show it;
+ * the rest fall back to their icon. Every tile is the SAME size (measured from
+ * the container, never flexGrow), so columns line up and a short last row does
+ * not stretch. The optional Add tile is the one dashed red tile, so it reads
+ * as an action rather than a category.
  */
 export function CategoryGrid({ categories, onSelect, limit, onAdd }: CategoryGridProps) {
   const [width, setWidth] = useState(0);
   const columns =
-    width === 0 ? 4 : width < 260 ? 3 : Math.min(8, Math.max(4, Math.floor(width / 96)));
+    width === 0 ? 4 : width < 260 ? 3 : Math.min(6, Math.max(3, Math.floor(width / 84)));
   const tileW = width ? Math.floor((width - GRID_GAP * (columns - 1)) / columns) : 0;
+  const tileH = Math.round(tileW * 1.06);
 
   const room = limit ? limit - (onAdd ? 1 : 0) : categories.length;
   const shown = categories.slice(0, Math.max(0, room));
 
-  const tileStyle = { width: tileW, gap: spacing.sm, alignItems: 'center' as const };
-  const box = {
-    width: '100%' as const,
-    height: Math.min(64, tileW || 64),
-    borderRadius: radii.md,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+  const frame = {
+    width: tileW,
+    height: tileH,
+    borderRadius: 2,
+    overflow: 'hidden' as const,
+    justifyContent: 'space-between' as const,
   };
-  const label = (text: string, tone?: 'accent') => (
-    <Text
-      variant="caption"
-      center
-      numberOfLines={LABEL_LINES}
-      tone={tone}
-      style={{
-        lineHeight: LABEL_LINE_HEIGHT,
-        minHeight: LABEL_LINE_HEIGHT * LABEL_LINES,
-        fontWeight: tone ? '700' : '500',
-        alignSelf: 'stretch',
-      }}
-    >
-      {text}
-    </Text>
-  );
+  const labelStyle = {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11.5,
+    lineHeight: 14,
+    color: '#111111',
+    textAlign: 'center' as const,
+    paddingHorizontal: 2,
+    paddingBottom: 7,
+  };
 
   return (
     <View
       onLayout={(e) => setWidth(Math.floor(e.nativeEvent.layout.width))}
-      style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: GRID_GAP, rowGap: spacing.lg }}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: GRID_GAP, rowGap: GRID_GAP }}
     >
       {tileW > 0
-        ? shown.map((c) => (
-            <Press
-              key={c.id}
-              scale="sm"
-              accessibilityRole="button"
-              accessibilityLabel={`Browse ${c.name}`}
-              onPress={() => onSelect(c.id)}
-              style={tileStyle}
-            >
-              <View
+        ? shown.map((c) => {
+            const photo = categoryImage[c.slug];
+            return (
+              <Press
+                key={c.id}
+                scale="sm"
+                accessibilityRole="button"
+                accessibilityLabel={`Browse ${c.name}`}
+                onPress={() => onSelect(c.id)}
                 style={{
-                  ...box,
-                  backgroundColor: colors.surface,
+                  ...frame,
+                  backgroundColor: '#FFFFFF',
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: '#111111',
                 }}
               >
-                <Ionicons name={categoryIcon(c.slug)} size={24} color={colors.textSecondary} />
-              </View>
-              {label(c.name)}
-            </Press>
-          ))
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  {photo ? (
+                    <Image
+                      source={photo}
+                      resizeMode="cover"
+                      accessibilityIgnoresInvertColors
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  ) : (
+                    <Ionicons name={categoryIcon(c.slug)} size={26} color="#111111" />
+                  )}
+                </View>
+                <View style={{ backgroundColor: '#FFFFFF', paddingTop: 6 }}>
+                  <Text numberOfLines={1} style={labelStyle}>
+                    {c.name}
+                  </Text>
+                </View>
+              </Press>
+            );
+          })
         : null}
       {tileW > 0 && onAdd ? (
         <Press
@@ -156,20 +162,28 @@ export function CategoryGrid({ categories, onSelect, limit, onAdd }: CategoryGri
           accessibilityRole="button"
           accessibilityLabel="Add a category"
           onPress={onAdd}
-          style={tileStyle}
+          style={{
+            ...frame,
+            borderWidth: 1.5,
+            borderStyle: 'dashed',
+            borderColor: '#FF3B2F',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+          }}
         >
-          <View
+          <Ionicons name="add" size={30} color="#FF3B2F" />
+          <Text
+            numberOfLines={1}
             style={{
-              ...box,
-              backgroundColor: colors.accentSoft,
-              borderWidth: 1.5,
-              borderStyle: 'dashed',
-              borderColor: colors.accentBorder,
+              ...labelStyle,
+              paddingBottom: 0,
+              color: '#FF3B2F',
+              fontFamily: 'Inter_700Bold',
             }}
           >
-            <Ionicons name="add" size={26} color={colors.accent} />
-          </View>
-          {label('Add', 'accent')}
+            Add more
+          </Text>
         </Press>
       ) : null}
     </View>
