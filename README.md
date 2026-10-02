@@ -10,8 +10,9 @@ wallet — a good is traded directly for a good.
 > a one-time demo identity-verification onboarding step; the `@pandam/ui`
 > design system and app navigation shell; I HAVE / I NEED, discovery, matches,
 > and profile on real API data with real R2 image upload; the full
-> request → offer → chat loop (an offer opens its conversation the moment
-> it's sent, not only on accept) with accept/decline, barter transactions,
+> request → offer → chat loop (an offer's conversation only opens once the
+> recipient accepts — declining or cancelling leaves no chat at all) with
+> accept/decline, barter transactions,
 > reviews, notifications, and abuse reports/disputes; real-money purchase of a
 > `sale`/`both` listing via Razorpay. **Not** built: disputes/admin
 > resolution UI, and the permanent V1 exclusions (AI matching, credits,

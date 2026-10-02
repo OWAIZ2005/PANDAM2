@@ -9,9 +9,10 @@
  *   GET  /:id          one offer (a party to it only)
  *   POST /:id/respond  accept / reject (recipient) / cancel (sender)
  *
- * Sending an offer opens its `conversation` straight away (both parties can
- * talk before deciding). Accepting creates the `barter_transactions` row and
- * reuses that conversation.
+ * Sending an offer does NOT open a conversation — the two people cannot chat
+ * until the recipient accepts. Rejecting or cancelling leaves no conversation
+ * at all. Accepting creates both the `barter_transactions` row and the
+ * conversation (or reuses one from an older offer that still has it).
  */
 import { type ItemRef, type OfferView } from '@pandam/types';
 import { createOfferSchema, respondToOfferSchema } from '@pandam/validation';
@@ -99,17 +100,12 @@ offersRoute.post('/', authMiddleware, requireAuth, async (c) => {
     expiresAt: input.expiresAt ?? null,
   });
 
-  // The trade conversation opens with the offer, so the two people can talk
-  // it through BEFORE deciding. Accepting later reuses this same thread.
-  const conversation = await repos.conversations.create({
-    offerId: created.id,
-    participantUserIds: [user.id, toUserId],
-  });
-
+  // No conversation yet — the recipient has to accept before either side can
+  // message the other (see `POST /:id/respond`).
   await notify(c, {
     userId: toUserId,
     type: 'offer_received',
-    data: { offerId: created.id, conversationId: conversation.id },
+    data: { offerId: created.id },
   });
 
   return sendOk(c, { offer: await hydrate(c, created, user.id) }, 201);
@@ -169,8 +165,9 @@ offersRoute.post('/:id/respond', authMiddleware, requireAuth, async (c) => {
       initiatedByUserId: offer.fromUserId,
       counterpartyUserId: offer.toUserId,
     });
-    // Offers made since chat-on-send already have their thread; older ones
-    // get one now.
+    // Accepting is what opens the conversation. `findByOffer` first in case
+    // this offer somehow already has one (e.g. a pre-fix row from before
+    // chat was gated on accept).
     const conversation =
       (await repos.conversations.findByOffer(offer.id)) ??
       (await repos.conversations.create({
