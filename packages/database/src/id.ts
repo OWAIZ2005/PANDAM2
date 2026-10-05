@@ -31,6 +31,7 @@ export const ID_PREFIXES = {
   report: 'rpt',
   dispute: 'dsp',
   payment: 'pay',
+  itemView: 'vew',
 } as const;
 
 export type EntityName = keyof typeof ID_PREFIXES;

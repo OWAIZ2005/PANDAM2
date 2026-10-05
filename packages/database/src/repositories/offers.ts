@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne, or } from 'drizzle-orm';
 
 import { newId } from '../id';
 import { type NewOfferRow, type OfferRow, type OfferStatus, offers } from '../schema/offers';
@@ -52,6 +52,33 @@ export function offersRepository(db: Database) {
         .where(eq(offers.id, id))
         .returning();
       return firstOrNull(rows);
+    },
+
+    /**
+     * Other still-`pending` offers that touch either item side of the offer
+     * being accepted (as the offered listing OR the requested listing/need,
+     * on either side of that other offer). Used to auto-close siblings once
+     * one offer on the same item is accepted — an item can only be traded
+     * once.
+     */
+    async listPendingTouchingItems(
+      listingIds: string[],
+      needIds: string[],
+      excludeOfferId: string,
+    ): Promise<OfferRow[]> {
+      if (listingIds.length === 0 && needIds.length === 0) return [];
+      const itemClauses = [
+        listingIds.length > 0 ? inArray(offers.offeredListingId, listingIds) : undefined,
+        listingIds.length > 0 ? inArray(offers.requestedListingId, listingIds) : undefined,
+        needIds.length > 0 ? inArray(offers.requestedNeedId, needIds) : undefined,
+      ].filter((c): c is NonNullable<typeof c> => c !== undefined);
+
+      return db
+        .select()
+        .from(offers)
+        .where(
+          and(eq(offers.status, 'pending'), ne(offers.id, excludeOfferId), or(...itemClauses)),
+        );
     },
   };
 }

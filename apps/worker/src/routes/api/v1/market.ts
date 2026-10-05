@@ -127,6 +127,7 @@ export function createMarketRoute(kind: Kind) {
       q: q.q,
       ownerId: q.owner,
       city: q.city,
+      since: q.since,
       limit: q.limit + 1,
       cursor: decodeCursor(q.cursor),
     });
@@ -167,13 +168,23 @@ export function createMarketRoute(kind: Kind) {
     const id = c.req.param('id');
     const row = await repo(c).one(id);
     if (!row) throw new ApiError('not_found', `That ${cfg.kind} does not exist.`);
+    const auth = c.get('auth');
     if (row.status !== 'published') {
-      const auth = c.get('auth');
       if (!auth || auth.user.id !== row.ownerId) {
         throw new ApiError('not_found', `That ${cfg.kind} does not exist.`);
       }
     }
-    return sendOk(c, { item: toMarketItem(row, cfg.kind) });
+
+    const { repos } = c.get('ctx');
+    // A signed-in, non-owner viewer opening a published item counts as a
+    // unique view; the owner opening their own listing never does (that's
+    // not "interest" in your own item).
+    if (auth && auth.user.id !== row.ownerId && row.status === 'published') {
+      await repos.itemViews.record(cfg.kind, id, auth.user.id);
+    }
+    const viewCount = await repos.itemViews.count(cfg.kind, id);
+
+    return sendOk(c, { item: toMarketItem(row, cfg.kind, viewCount) });
   });
 
   route.patch('/:id', authMiddleware, requireAuth, async (c) => {

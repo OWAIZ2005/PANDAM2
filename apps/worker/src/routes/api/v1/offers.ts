@@ -174,18 +174,37 @@ offersRoute.post('/:id/respond', authMiddleware, requireAuth, async (c) => {
         offerId: offer.id,
         participantUserIds: [offer.fromUserId, offer.toUserId],
       }));
-    await Promise.all([
+    const listingIds = [offer.offeredListingId, offer.requestedListingId].filter(
+      (id): id is string => id !== null,
+    );
+    const needIds = offer.requestedNeedId ? [offer.requestedNeedId] : [];
+
+    const [, , siblings] = await Promise.all([
       // The traded items leave the market; a fulfilled request closes.
-      repos.listings.setStatus(offer.offeredListingId, 'archived'),
+      repos.listings.setStatus(offer.offeredListingId, 'traded'),
       offer.requestedListingId
-        ? repos.listings.setStatus(offer.requestedListingId, 'archived')
-        : repos.needs.setStatus(offer.requestedNeedId!, 'archived'),
+        ? repos.listings.setStatus(offer.requestedListingId, 'traded')
+        : repos.needs.setStatus(offer.requestedNeedId!, 'traded'),
+      repos.offers.listPendingTouchingItems(listingIds, needIds, offer.id),
       notify(c, {
         userId: offer.fromUserId,
         type: 'offer_accepted',
         data: { offerId: offer.id, transactionId: transaction.id, conversationId: conversation.id },
       }),
     ]);
+
+    // Only one offer can win per item: close every other pending offer that
+    // touched either traded item, and tell its sender why.
+    await Promise.all(
+      siblings.map(async (sibling) => {
+        await repos.offers.applyStatus(sibling.id, 'cancelled');
+        await notify(c, {
+          userId: sibling.fromUserId,
+          type: 'offer_cancelled',
+          data: { offerId: sibling.id },
+        });
+      }),
+    );
   } else {
     await notify(c, {
       userId: offer.fromUserId,

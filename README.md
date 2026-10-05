@@ -211,17 +211,39 @@ Optional. Without any of the below set, the app still runs fine and the
 Google/Apple buttons on login/register show a clear "not configured" message
 instead of failing silently. To turn them on you need your **own** Google
 Cloud / Apple Developer credentials — nobody else's client ids will work for
-your build:
+your build.
 
-- `apps/app/.env.local`: `EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB`,
-  `EXPO_PUBLIC_GOOGLE_CLIENT_ID_NATIVE` — not secret, embedded in the bundle.
-- `apps/worker/.dev.vars`: `GOOGLE_OAUTH_CLIENT_IDS` (comma-separated — every
-  platform client id, since the server has to accept an ID token minted for
-  any of them), `APPLE_OAUTH_AUDIENCES` (your bundle id, plus a Services ID
-  if you also want Apple sign-in on web).
-- Apple sign-in additionally needs a **custom EAS development build** — it's
-  a native module Expo Go doesn't include, so it won't appear at all when
-  testing through plain Expo Go on a phone. Google sign-in works in Expo Go.
+**Both providers are native modules and need a custom EAS development or
+production build — neither appears, or works correctly, in plain Expo Go.**
+On `web`, Google falls back to the `expo-auth-session` redirect flow (no
+native module needed there); Apple has no web path at all.
+
+1. **Google Cloud Console** (console.cloud.google.com → APIs & Services →
+   Credentials → Create Credentials → OAuth client ID) — create two clients
+   in the same project:
+   - **Web application** — used two ways: the `web` platform's redirect
+     flow, and as `webClientId` for the native iOS/Android SDK (Google signs
+     the token returned on iOS/Android with this client as its `aud`, which
+     is what the server then verifies against).
+   - **iOS** — bundle id `com.pandam.app`. Used as `iosClientId` for the
+     native SDK. Note its numeric client id; its reversed form
+     (`com.googleusercontent.apps.<that id>`) is a **build-time** value that
+     must be set as `iosUrlScheme` in `apps/app/app.json`'s
+     `@react-native-google-signin/google-signin` plugin entry — changing it
+     requires a new native build (`eas build` / `expo prebuild`), it cannot
+     be swapped at runtime via env var like the other values here.
+2. `apps/app/.env.local`: `EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB`,
+   `EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS` — not secret, embedded in the bundle.
+3. `apps/worker/.dev.vars`: `GOOGLE_OAUTH_CLIENT_IDS` (comma-separated — both
+   the Web and iOS client ids above, since the server has to accept an ID
+   token minted for either), `APPLE_OAUTH_AUDIENCES` (your bundle id, plus a
+   Services ID if you also want Apple sign-in on web).
+4. Google sign-in replay protection: the native iOS SDK
+   (`@react-native-google-signin/google-signin`) has no nonce parameter in
+   its free tier, so the native flow sends none — the server falls back to
+   verifying the token on signature + issuer + audience + expiry alone for
+   that flow specifically. The `web` Google flow and all of Apple sign-in
+   still use a nonce and the server still enforces it strictly for those.
 
 See `apps/app/src/lib/auth/oauth.ts` and `apps/worker/src/lib/oauth.ts` for
 exactly what each value verifies.

@@ -60,7 +60,17 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const oauthLoginSchema = z.object({
   provider: z.enum(OAUTH_PROVIDER),
   idToken: z.string().min(1).max(4096),
-  nonce: z.string().min(16).max(256),
+  /**
+   * Required for Apple (its SDK always supplies one) but OPTIONAL for
+   * Google: `@react-native-google-signin/google-signin` — Google's own
+   * native SDK, the production iOS/Android sign-in path — has no nonce
+   * parameter in its free tier (confirmed against the installed version's
+   * types; there is simply nothing to pass). The web Google flow
+   * (`expo-auth-session`) still generates and sends one. The Worker enforces
+   * "required for Apple" itself (`verifyAppleIdToken` always demands it);
+   * `verifyGoogleIdToken` checks it only when the client supplied one.
+   */
+  nonce: z.string().min(16).max(256).optional(),
   displayName: boundedString(1, 80).optional(),
 });
 export type OAuthLoginInput = z.infer<typeof oauthLoginSchema>;

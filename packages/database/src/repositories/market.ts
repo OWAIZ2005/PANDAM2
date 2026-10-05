@@ -8,7 +8,7 @@
  * listings and needs use separate select shapes rather than forcing one
  * generic shape to fit both.
  */
-import { and, asc, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lt, or, sql } from 'drizzle-orm';
 
 import { type ItemType, type PublicationStatus, type TransactionType } from '../enums';
 import { categories } from '../schema/categories';
@@ -90,6 +90,9 @@ export interface DiscoverFilters {
    *  profile city. Barter means meeting in person, so "near me" is a city
    *  match rather than a radius — no coordinates are stored anywhere. */
   city?: string;
+  /** Epoch ms — only rows with `createdAt >= since`. Home's recency filter;
+   *  Discover (the full active marketplace) never sets this. */
+  since?: number;
 }
 
 /** Escape LIKE wildcards in user input; used with `ESCAPE '\'`. */
@@ -248,6 +251,7 @@ export function marketRepository(db: Database) {
       if (f.city && f.city.trim()) {
         where.push(sql`lower(${profiles.locationCity}) = ${f.city.trim().toLowerCase()}`);
       }
+      if (f.since !== undefined) where.push(gte(listings.createdAt, f.since));
       if (f.q && f.q.trim()) {
         const arg = likeArg(f.q);
         where.push(
@@ -281,6 +285,7 @@ export function marketRepository(db: Database) {
       if (f.city && f.city.trim()) {
         where.push(sql`lower(${profiles.locationCity}) = ${f.city.trim().toLowerCase()}`);
       }
+      if (f.since !== undefined) where.push(gte(needs.createdAt, f.since));
       if (f.q && f.q.trim()) {
         const arg = likeArg(f.q);
         where.push(

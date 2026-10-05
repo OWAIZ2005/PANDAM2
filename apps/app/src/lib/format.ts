@@ -19,6 +19,8 @@ export const STATUS_LABEL: Record<PublicationStatus, string> = {
   draft: 'Draft',
   published: 'Active',
   paused: 'Paused',
+  sold: 'Sold',
+  traded: 'Traded',
   archived: 'Archived',
 };
 

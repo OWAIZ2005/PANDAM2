@@ -14,6 +14,7 @@ import { categoriesRepository } from './categories';
 import { conversationsRepository } from './conversations';
 import { credentialsRepository } from './credentials';
 import { disputesRepository } from './disputes';
+import { itemViewsRepository } from './item-views';
 import { listingImagesRepository } from './listing-images';
 import { listingsRepository } from './listings';
 import { marketRepository } from './market';
@@ -54,6 +55,7 @@ export function createRepositories(db: Database) {
     reports: reportsRepository(db),
     disputes: disputesRepository(db),
     payments: paymentsRepository(db),
+    itemViews: itemViewsRepository(db),
   };
 }
 

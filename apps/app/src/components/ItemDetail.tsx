@@ -51,6 +51,10 @@ const STATUS_ACTIONS: Record<PublicationStatus, { to: PublicationStatus; label: 
     { to: 'published', label: 'Publish' },
     { to: 'archived', label: 'Archive' },
   ],
+  // Terminal — consumed by a real-money sale or an accepted barter offer.
+  // Nothing to do here; the item's history is preserved, not reopened.
+  sold: [],
+  traded: [],
   archived: [{ to: 'published', label: 'Re-publish' }],
 };
 
@@ -363,14 +367,20 @@ export function ItemDetail({ kind, id }: { kind: MarketKind; id: string }) {
                       dot
                     />
                     {item.status === 'published' ? (
-                      <Badge
-                        label={
-                          interestedCount > 0
-                            ? `${interestedCount} interested`
-                            : 'No interest yet'
-                        }
-                        kind={interestedCount > 0 ? 'match' : 'neutral'}
-                      />
+                      <>
+                        <Badge
+                          label={`${item.viewCount ?? 0} ${(item.viewCount ?? 0) === 1 ? 'view' : 'views'}`}
+                          kind="neutral"
+                        />
+                        <Badge
+                          label={
+                            interestedCount > 0
+                              ? `${interestedCount} interested`
+                              : 'No interest yet'
+                          }
+                          kind={interestedCount > 0 ? 'match' : 'neutral'}
+                        />
+                      </>
                     ) : null}
                   </Row>
                 ) : null}

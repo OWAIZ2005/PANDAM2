@@ -169,8 +169,14 @@ export default function HomeScreen() {
   const categories = useBrowseCategories();
   const [addingCategory, setAddingCategory] = useState(false);
   const matches = demoQuery(useMatches(), demoMatches);
+  // "Fresh near you" is a RECENCY window, not just the first page of Discover
+  // (which has no age limit at all) — only listings published in the last 3
+  // days show here, newest first. Older-but-still-available listings remain
+  // fully visible in Discover.
+  const FRESH_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+  const [freshSince] = useState(() => Date.now() - FRESH_WINDOW_MS);
   const recent = demoMergePages(
-    useDiscover('listing', { limit: 8 }),
+    useDiscover('listing', { limit: 8, since: freshSince }),
     demoPages(demoOthersListings),
   );
   const myHave = demoMergeList(useMyItems('listing'), demoMyListings);

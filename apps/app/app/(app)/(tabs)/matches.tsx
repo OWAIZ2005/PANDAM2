@@ -1,25 +1,34 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, ScrollView, View } from 'react-native';
+import { Alert, FlatList, Platform, ScrollView, View } from 'react-native';
 
 import { type OfferView } from '@pandam/types';
 import {
   Avatar,
   Badge,
+  Button,
+  Card,
   Chip,
+  CoverTile,
   EmptyState,
   FloatingObject,
   GroupedList,
   ListRow,
   Notice,
+  Press,
   Reveal,
+  Row,
   Screen,
   SegmentedControl,
   SkeletonList,
+  Stack,
+  Text,
   colors,
   layout,
+  radii,
   spacing,
+  useToast,
 } from '@pandam/ui';
 
 import { AppHeader } from '@/components/AppHeader';
@@ -27,8 +36,12 @@ import { ObjectCluster } from '@/components/brand/ObjectCluster';
 import { MatchCard } from '@/components/MatchCard';
 import { ErrorState } from '@/components/states';
 import { demoMatches, demoMergeList, demoOffers, demoQuery } from '@/dummy';
-import { mediaSrc } from '@/lib/api/media';
-import { useIncomingOffers, useOutgoingOffers } from '@/lib/hooks/useOffers';
+import { ApiError } from '@/lib/api/client';
+import { mediaSrc, primaryImage } from '@/lib/api/media';
+import { categoryIcon } from '@/lib/icons';
+import { type MarketKind } from '@/lib/api/market';
+import { useItem } from '@/lib/hooks/useMarket';
+import { useIncomingOffers, useOutgoingOffers, useRespondToOffer } from '@/lib/hooks/useOffers';
 import { useMatches } from '@/lib/hooks/useMatches';
 
 const STATUS_KIND: Record<OfferView['status'], 'neutral' | 'success' | 'danger' | 'warning'> = {
@@ -58,6 +71,204 @@ const INCOMING_FILTER_LABEL: Record<IncomingFilter, string> = {
 };
 
 type Tab = 'reciprocal' | 'received' | 'sent';
+
+const EMPTY_GROUPS: ListingGroup[] = [];
+
+interface ListingGroup {
+  kind: MarketKind;
+  itemId: string;
+  title: string;
+  offers: OfferView[];
+}
+
+/** Incoming offers, bucketed by the listing/need they're against (`requested`
+ *  — on an incoming offer that is always one of MY items, never theirs). */
+function groupIncomingByListing(offers: OfferView[]): ListingGroup[] {
+  const order: string[] = [];
+  const byItem = new Map<string, ListingGroup>();
+  for (const offer of offers) {
+    const itemId = offer.requested.id;
+    let group = byItem.get(itemId);
+    if (!group) {
+      group = {
+        kind: offer.requestedKind === 'need' ? 'need' : 'listing',
+        itemId,
+        title: offer.requested.title,
+        offers: [],
+      };
+      byItem.set(itemId, group);
+      order.push(itemId);
+    }
+    group.offers.push(offer);
+  }
+  return order.map((id) => byItem.get(id)!);
+}
+
+/**
+ * One of YOUR listings/needs, with its real view/interested counts (fetched
+ * from the same `GET /:id` the item detail screen uses — view count is never
+ * invented here) and every person interested in it underneath, each with a
+ * real Accept/Reject acting on that exact offer via the existing offers API.
+ */
+function ReceivedListingGroup({ group }: { group: ListingGroup }) {
+  const router = useRouter();
+  const toast = useToast();
+  const item = useItem(group.kind, group.itemId);
+  const respond = useRespondToOffer();
+
+  const interestedCount = group.offers.filter(
+    (o) => o.status === 'pending' || o.status === 'accepted',
+  ).length;
+  const viewCount = item.data?.viewCount ?? 0;
+  const title = item.data?.title ?? group.title;
+  const thumbUri = item.data?.images ? primaryImage(item.data.images) : undefined;
+
+  const doAccept = (offer: OfferView) =>
+    respond.mutate(
+      { id: offer.id, action: 'accept' },
+      {
+        onSuccess: () =>
+          toast.success(`Accepted ${offer.fromUser.displayName}'s offer. You can chat now.`),
+        onError: (err) =>
+          toast.show({
+            message: err instanceof ApiError ? err.message : 'Could not accept that offer.',
+          }),
+      },
+    );
+
+  const confirmAccept = (offer: OfferView) => {
+    const dialogTitle = `Accept ${offer.fromUser.displayName}'s offer?`;
+    const body =
+      offer.requestedKind === 'need'
+        ? 'The offered listing comes off the marketplace and your request closes.'
+        : 'Both items come off the marketplace and every other pending interest in this item is closed automatically.';
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm?.(`${dialogTitle}\n\n${body}`)) doAccept(offer);
+      return;
+    }
+    Alert.alert(dialogTitle, body, [
+      { text: 'Not yet', style: 'cancel' },
+      { text: 'Accept', onPress: () => doAccept(offer) },
+    ]);
+  };
+
+  const doReject = (offer: OfferView) =>
+    respond.mutate(
+      { id: offer.id, action: 'reject' },
+      {
+        onSuccess: () => toast.show({ message: 'Offer declined.' }),
+        onError: (err) =>
+          toast.show({
+            message: err instanceof ApiError ? err.message : 'Could not decline that offer.',
+          }),
+      },
+    );
+
+  return (
+    <Card padded bordered elevated="xs">
+      <Press
+        onPress={() =>
+          router.push(
+            group.kind === 'listing'
+              ? `/(app)/listing/${group.itemId}`
+              : `/(app)/need/${group.itemId}`,
+          )
+        }
+      >
+      <Row gap="md" align="center">
+        <CoverTile
+          seed={group.itemId}
+          uri={thumbUri}
+          height={56}
+          radius="md"
+          style={{ width: 56 }}
+          icon={
+            <Ionicons
+              name={categoryIcon(item.data?.category.slug ?? '')}
+              size={22}
+              color="rgba(255,255,255,0.7)"
+            />
+          }
+        />
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text variant="label" style={{ textTransform: 'uppercase', color: colors.textFaint }}>
+            Your listing
+          </Text>
+          <Text variant="bodyStrong" numberOfLines={1}>
+            {title}
+          </Text>
+          <Row gap="sm">
+            <Badge label={`${viewCount} ${viewCount === 1 ? 'view' : 'views'}`} kind="neutral" />
+            <Badge
+              label={`${interestedCount} interested`}
+              kind={interestedCount > 0 ? 'match' : 'neutral'}
+            />
+          </Row>
+        </View>
+      </Row>
+      </Press>
+
+      <Stack gap="sm" style={{ marginTop: spacing.md }}>
+        {group.offers.map((offer) => (
+          <View
+            key={offer.id}
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: colors.borderSoft,
+              paddingTop: spacing.sm,
+              gap: spacing.sm,
+            }}
+          >
+            <ListRow
+              leading={
+                <Avatar
+                  name={offer.fromUser.displayName}
+                  size={36}
+                  uri={mediaSrc(offer.fromUser.avatarUrl)}
+                />
+              }
+              title={offer.fromUser.displayName}
+              subtitle="Interested in this item"
+              trailing={
+                <Badge label={STATUS_LABEL[offer.status]} kind={STATUS_KIND[offer.status]} dot />
+              }
+              chevron={<Ionicons name="chevron-forward" size={16} color={colors.textFaint} />}
+              onPress={() => router.push(`/(app)/offer/${offer.id}`)}
+            />
+            {offer.status === 'pending' ? (
+              <Row gap="sm">
+                <Button
+                  label="Accept"
+                  size="sm"
+                  loading={respond.isPending}
+                  onPress={() => confirmAccept(offer)}
+                  leftIcon={<Ionicons name="checkmark" size={15} color={colors.textInverse} />}
+                />
+                <Button
+                  label="Reject"
+                  variant="quiet"
+                  size="sm"
+                  loading={respond.isPending}
+                  onPress={() => doReject(offer)}
+                />
+              </Row>
+            ) : offer.status === 'accepted' && offer.conversationId ? (
+              <Button
+                label="Message"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.push(`/(app)/chat/${offer.conversationId}`)}
+                leftIcon={
+                  <Ionicons name="chatbubbles-outline" size={15} color={colors.textPrimary} />
+                }
+              />
+            ) : null}
+          </View>
+        ))}
+      </Stack>
+    </Card>
+  );
+}
 
 /**
  * Matches — the single screen for everything about who you could trade with
@@ -109,6 +320,9 @@ export default function MatchesScreen() {
     tab === 'received' && incomingFilter !== 'all'
       ? offersTab.data?.filter((o) => o.status === incomingFilter)
       : offersTab.data;
+
+  const receivedGroups =
+    tab === 'received' ? groupIncomingByListing(offersData ?? []) : EMPTY_GROUPS;
 
   return (
     <Screen padded={false}>
@@ -235,6 +449,42 @@ export default function MatchesScreen() {
             ) : null
           }
         />
+      ) : tab === 'received' ? (
+        <FlatList
+          data={receivedGroups}
+          keyExtractor={(g) => g.itemId}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            width: '100%',
+            maxWidth: layout.contentMaxWidth,
+            alignSelf: 'center',
+            paddingHorizontal: layout.gutter,
+            paddingTop: spacing.lg,
+            paddingBottom: layout.tabBarInset,
+            gap: spacing.md,
+            flexGrow: 1,
+          }}
+          refreshing={incoming.isRefetching}
+          onRefresh={() => void incoming.refetch()}
+          renderItem={({ item, index }) => (
+            <Reveal index={index}>
+              <ReceivedListingGroup group={item} />
+            </Reveal>
+          )}
+          ListEmptyComponent={
+            incoming.isPending ? (
+              <SkeletonList count={3} />
+            ) : incoming.isError ? (
+              <ErrorState error={incoming.error} onRetry={() => void incoming.refetch()} />
+            ) : (
+              <EmptyState
+                icon={<Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />}
+                title="No interest yet"
+                body="When someone wants to trade for something you have, it arrives here."
+              />
+            )
+          }
+        />
       ) : (
         <GroupedList
           data={offersData ?? []}
@@ -278,14 +528,10 @@ export default function MatchesScreen() {
             ) : (
               <EmptyState
                 icon={<Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />}
-                title={tab === 'received' ? 'No interest yet' : 'No offers sent'}
-                body={
-                  tab === 'received'
-                    ? 'When someone wants to trade for something you have, it arrives here.'
-                    : 'Open any listing you like and offer one of your own items against it.'
-                }
-                actionLabel={tab === 'sent' ? 'Browse listings' : undefined}
-                onAction={tab === 'sent' ? () => router.push('/(app)/(tabs)/discover') : undefined}
+                title="No offers sent"
+                body="Open any listing you like and offer one of your own items against it."
+                actionLabel="Browse listings"
+                onAction={() => router.push('/(app)/(tabs)/discover')}
               />
             )
           }

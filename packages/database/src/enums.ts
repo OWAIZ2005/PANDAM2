@@ -29,8 +29,25 @@ export type CategoryStatus = (typeof CATEGORY_STATUS)[number];
 export const ITEM_TYPE = ['product', 'service', 'skill'] as const;
 export type ItemType = (typeof ITEM_TYPE)[number];
 
-/** Publication lifecycle shared by listings and needs. Only `published` matches. */
-export const PUBLICATION_STATUS = ['draft', 'published', 'paused', 'archived'] as const;
+/** Which of the two parallel tables an item lives in — a listing or a need. */
+export const ITEM_KIND = ['listing', 'need'] as const;
+export type ItemKind = (typeof ITEM_KIND)[number];
+
+/**
+ * Publication lifecycle shared by listings and needs. Only `published` matches.
+ * `sold` = consumed via a real-money payment (see `payments.ts`); `traded` =
+ * consumed via an accepted barter offer; `archived` = manually unlisted by the
+ * owner with no transaction behind it. All three are terminal and excluded
+ * from discovery/matching the same way.
+ */
+export const PUBLICATION_STATUS = [
+  'draft',
+  'published',
+  'paused',
+  'sold',
+  'traded',
+  'archived',
+] as const;
 export type PublicationStatus = (typeof PUBLICATION_STATUS)[number];
 
 export const MATCH_STATUS = ['candidate', 'dismissed'] as const;

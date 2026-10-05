@@ -20,10 +20,23 @@ type ClientEnv = {
    * fail. See `@/lib/auth/oauth` for how each is used.
    */
   googleOAuthClientId: {
-    /** Used on web (the redirect-based flow runs in the browser itself). */
+    /**
+     * Web OAuth client — used two ways: (1) the redirect-based
+     * `expo-auth-session` flow on the `web` platform itself, and (2) as
+     * `webClientId` passed to `GoogleSignin.configure()` on iOS/Android,
+     * which is what makes the native SDK return an ID token at all (Google
+     * signs that token's `aud` claim as the web client, by design — it is
+     * the client your *server* verifies against, see
+     * `GOOGLE_OAUTH_CLIENT_IDS` in `apps/worker/.dev.vars`).
+     */
     web: string | null;
-    /** Used on iOS/Android (the system-browser flow via `expo-auth-session`). */
-    native: string | null;
+    /**
+     * iOS OAuth client — passed as `iosClientId` to `GoogleSignin.configure()`.
+     * Required only on iOS; unused on web/Android. Must match the
+     * `iosUrlScheme` (reversed client id) configured in `app.json`'s
+     * `@react-native-google-signin/google-signin` plugin entry.
+     */
+    ios: string | null;
   };
 };
 
@@ -63,6 +76,6 @@ export const clientEnv: ClientEnv = {
   posthogHost: required(process.env.EXPO_PUBLIC_POSTHOG_HOST, 'https://us.i.posthog.com'),
   googleOAuthClientId: {
     web: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || null,
-    native: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_NATIVE || null,
+    ios: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || null,
   },
 };

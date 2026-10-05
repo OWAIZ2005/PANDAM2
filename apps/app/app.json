@@ -44,6 +44,12 @@
       "expo-web-browser",
       "expo-apple-authentication",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.12390503303-ppr7qkqk4ea99vbac3gm02il51eiej4h"
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "PANDAM uses your front camera for a one-time face verification selfie.",

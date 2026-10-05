@@ -179,7 +179,7 @@ paymentsRoute.post('/webhook', async (c) => {
         webhookVerified: true,
         ...(razorpayPaymentId ? { razorpayPaymentId } : {}),
       });
-      await repos.listings.setStatus(payment.listingId, 'archived');
+      await repos.listings.setStatus(payment.listingId, 'sold');
       await notify(c, {
         userId: payment.sellerId,
         type: 'transaction_updated',

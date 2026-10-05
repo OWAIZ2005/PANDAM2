@@ -35,3 +35,4 @@ export * from './push-tokens';
 export * from './reports';
 export * from './disputes';
 export * from './payments';
+export * from './item-views';

@@ -90,6 +90,7 @@ export function toOwner(owner: DbOwnerRef): OwnerRef {
 export function toMarketItem(
   row: ListingWithRefs | NeedWithRefs,
   kind: 'listing' | 'need',
+  viewCount?: number,
 ): MarketItem {
   return {
     id: row.id,
@@ -103,6 +104,7 @@ export function toMarketItem(
     updatedAt: row.updatedAt,
     owner: toOwner(row.owner),
     category: row.category,
+    ...(viewCount !== undefined ? { viewCount } : {}),
     // Only a listing carries pricing and photos — a need is a request, so it
     // is never itself for sale and has nothing of its own to photograph.
     ...('pricing' in row ? { pricing: row.pricing } : {}),

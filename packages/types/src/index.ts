@@ -261,6 +261,12 @@ export interface MarketItem {
   pricing?: Pricing;
   /** Ordered photos; only present on listings, and empty until one is added. */
   images?: ItemImage[];
+  /**
+   * Unique-viewer count, only present on the single-item `GET /:id` response
+   * (never on discover/list responses, to keep those cheap). Counts distinct
+   * users who have opened this item, not raw opens.
+   */
+  viewCount?: number;
 }
 
 /** One uploaded listing photo. `url` is relative to the API origin. */

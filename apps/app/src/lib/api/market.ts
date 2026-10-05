@@ -15,7 +15,9 @@ import { api } from './client';
 export type MarketKind = 'listing' | 'need';
 type CreateInput = CreateListingInput | CreateNeedInput;
 type UpdateInput = UpdateListingInput;
-type StatusInput = { status: 'draft' | 'published' | 'paused' | 'archived' };
+type StatusInput = {
+  status: 'draft' | 'published' | 'paused' | 'sold' | 'traded' | 'archived';
+};
 
 export type DiscoverParams = Partial<Omit<DiscoverQuery, 'cursor'>> & {
   cursor?: string | null;
@@ -30,6 +32,7 @@ function toQuery(params: DiscoverParams): string {
   if (params.q) q.set('q', params.q);
   if (params.owner) q.set('owner', params.owner);
   if (params.city) q.set('city', params.city);
+  if (params.since) q.set('since', String(params.since));
   if (params.limit) q.set('limit', String(params.limit));
   if (params.cursor) q.set('cursor', params.cursor);
   const s = q.toString();

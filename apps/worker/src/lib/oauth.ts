@@ -71,12 +71,19 @@ async function verify(
 }
 
 /**
- * Verify a Google ID token and check its `nonce` claim matches what this
- * sign-in attempt sent, so a token cannot be replayed from elsewhere.
+ * Verify a Google ID token. When the client sent a `nonce` (the web redirect
+ * flow always does), it must match the token's own `nonce` claim exactly, so
+ * that token cannot be replayed from elsewhere. When it did not (the native
+ * iOS/Android flow via `@react-native-google-signin/google-signin`, whose
+ * free tier has no nonce parameter to populate one with — there is nothing
+ * client-side to check against), the nonce check is skipped and the token is
+ * trusted on signature + issuer + audience + expiry alone, same as any other
+ * bearer-token verification. This does not weaken anything Apple requires —
+ * `verifyAppleIdToken` below always demands a nonce, unconditionally.
  */
 export async function verifyGoogleIdToken(
   idToken: string,
-  nonce: string,
+  nonce: string | undefined,
   env: { GOOGLE_OAUTH_CLIENT_IDS?: string },
 ): Promise<VerifiedOAuthIdentity> {
   const audiences = splitList(env.GOOGLE_OAUTH_CLIENT_IDS);
@@ -87,7 +94,7 @@ export async function verifyGoogleIdToken(
     audiences,
     'Google',
   );
-  if (payload.nonce !== nonce) {
+  if (nonce !== undefined && payload.nonce !== nonce) {
     throw new ApiError('unauthorized', 'Could not verify the Google sign-in.');
   }
   const subject = asString(payload.sub);
@@ -107,7 +114,7 @@ export async function verifyGoogleIdToken(
  */
 export async function verifyAppleIdToken(
   idToken: string,
-  nonce: string,
+  nonce: string | undefined,
   env: { APPLE_OAUTH_AUDIENCES?: string },
 ): Promise<VerifiedOAuthIdentity> {
   const audiences = splitList(env.APPLE_OAUTH_AUDIENCES);
@@ -118,7 +125,11 @@ export async function verifyAppleIdToken(
     audiences,
     'Apple',
   );
-  if (payload.nonce !== nonce) {
+  // Unlike Google, Apple's SDK always supplies a nonce (expo-apple-authentication
+  // has no path that omits one) — a missing nonce here means a malformed or
+  // tampered request, not a legitimate SDK limitation, so it is rejected
+  // outright rather than silently skipped.
+  if (nonce === undefined || payload.nonce !== nonce) {
     throw new ApiError('unauthorized', 'Could not verify the Apple sign-in.');
   }
   const subject = asString(payload.sub);

@@ -21,6 +21,9 @@ export type DiscoverParams = {
   /** Coarse city match against the owner's profile. */
   city?: string;
   limit?: number;
+  /** Epoch ms — only items created at or after this instant (Home's "Fresh
+   *  near you" recency filter; Discover never sets this). */
+  since?: number;
 };
 
 export function useDiscover(kind: MarketKind, params: DiscoverParams) {
