@@ -99,12 +99,12 @@ export function CategoryGrid({ categories, onSelect, limit, onAdd }: CategoryGri
   const frame = {
     width: tileW,
     height: tileH,
-    borderRadius: 2,
+    borderRadius: 18,
     overflow: 'hidden' as const,
     justifyContent: 'space-between' as const,
   };
   const labelStyle = {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'InterTight_500Medium',
     fontSize: 11.5,
     lineHeight: 14,
     color: '#111111',
@@ -132,7 +132,7 @@ export function CategoryGrid({ categories, onSelect, limit, onAdd }: CategoryGri
                   ...frame,
                   backgroundColor: '#FFFFFF',
                   borderWidth: 1,
-                  borderColor: '#111111',
+                  borderColor: '#E9E6DF',
                 }}
               >
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -166,20 +166,20 @@ export function CategoryGrid({ categories, onSelect, limit, onAdd }: CategoryGri
             ...frame,
             borderWidth: 1.5,
             borderStyle: 'dashed',
-            borderColor: '#FF3B2F',
+            borderColor: '#FF3B20',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 4,
           }}
         >
-          <Ionicons name="add" size={30} color="#FF3B2F" />
+          <Ionicons name="add" size={30} color="#FF3B20" />
           <Text
             numberOfLines={1}
             style={{
               ...labelStyle,
               paddingBottom: 0,
-              color: '#FF3B2F',
-              fontFamily: 'Inter_700Bold',
+              color: '#FF3B20',
+              fontFamily: 'InterTight_700Bold',
             }}
           >
             Add more

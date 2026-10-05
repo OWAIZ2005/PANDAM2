@@ -123,7 +123,7 @@ export default function TransactionsScreen() {
               body="A transaction is created the moment an offer is accepted — this is where you track it through to done."
               actionLabel="See your offers"
               actionVariant="secondary"
-              onAction={() => router.push('/(app)/offers')}
+              onAction={() => router.push('/(app)/(tabs)/matches?tab=received')}
             />
           )
         }

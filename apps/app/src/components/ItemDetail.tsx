@@ -35,6 +35,7 @@ import { type MarketKind } from '@/lib/api/market';
 import { mediaSrc } from '@/lib/api/media';
 import { useSession } from '@/lib/auth/hooks';
 import { STATUS_LABEL, TYPE_LABEL, formatMoney, statusBadgeKind, timeAgo } from '@/lib/format';
+import { useIncomingOffers } from '@/lib/hooks/useOffers';
 import { useItem, useSetItemStatus } from '@/lib/hooks/useMarket';
 import { useCreatePayment } from '@/lib/hooks/usePayments';
 import { categoryIcon, typeIcon } from '@/lib/icons';
@@ -82,6 +83,15 @@ export function ItemDetail({ kind, id }: { kind: MarketKind; id: string }) {
 
   const item = query.data;
   const mine = !!item && !!user && item.ownerId === user.id;
+  /* "Interested" is real persisted demand — pending/accepted offers against
+     this exact item — never a view count or a guess. */
+  const incomingOffers = useIncomingOffers();
+  const interestedCount =
+    mine && item
+      ? (incomingOffers.data ?? []).filter(
+          (o) => o.requested.id === item.id && (o.status === 'pending' || o.status === 'accepted'),
+        ).length
+      : 0;
   const pricing = item?.pricing;
   const canBarter = isHave && (!pricing || pricing.transactionType !== 'sale');
   const canBuy =
@@ -157,19 +167,16 @@ export function ItemDetail({ kind, id }: { kind: MarketKind; id: string }) {
               }
               leftIcon={<Ionicons name="create-outline" size={16} color={colors.textInverse} />}
             />
-            {!isHave ? (
-              // Your own request: the offers people sent for it live in Offers.
-              <Button
-                label="View offers"
-                variant="secondary"
-                size="lg"
-                fullWidth
-                onPress={() => router.push('/(app)/offers')}
-                leftIcon={
-                  <Ionicons name="mail-open-outline" size={16} color={colors.textPrimary} />
-                }
-              />
-            ) : null}
+            {/* Your own listing or request: offers people sent against it live
+                in Matches → Received. */}
+            <Button
+              label={interestedCount > 0 ? `View offers · ${interestedCount}` : 'View offers'}
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onPress={() => router.push('/(app)/(tabs)/matches?tab=received')}
+              leftIcon={<Ionicons name="mail-open-outline" size={16} color={colors.textPrimary} />}
+            />
             <Row gap="sm">
               {STATUS_ACTIONS[item.status].map((a) => (
                 <Button
@@ -349,11 +356,23 @@ export function ItemDetail({ kind, id }: { kind: MarketKind; id: string }) {
               {/* ------------------------------------------------------ title -- */}
               <Stack gap="md">
                 {mine ? (
-                  <Badge
-                    label={STATUS_LABEL[item.status]}
-                    kind={statusBadgeKind(item.status)}
-                    dot
-                  />
+                  <Row gap="sm" align="center">
+                    <Badge
+                      label={STATUS_LABEL[item.status]}
+                      kind={statusBadgeKind(item.status)}
+                      dot
+                    />
+                    {item.status === 'published' ? (
+                      <Badge
+                        label={
+                          interestedCount > 0
+                            ? `${interestedCount} interested`
+                            : 'No interest yet'
+                        }
+                        kind={interestedCount > 0 ? 'match' : 'neutral'}
+                      />
+                    ) : null}
+                  </Row>
                 ) : null}
 
                 <Text variant="display">{item.title}</Text>

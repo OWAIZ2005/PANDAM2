@@ -11,6 +11,9 @@ export const homeImages = {
   note: require('../../assets/home/note.webp') as number,
   arrow: require('../../assets/home/arrow.webp') as number,
   logo: require('../../assets/home/logo.webp') as number,
+  laptop: require('../../assets/home/laptop.webp') as number,
+  heroConcrete: require('../../assets/home/hero_concrete.png') as number,
+  heroCurve: require('../../assets/home/hero_curve.png') as number,
 } as const;
 
 /** Category slug → its product tile photograph. Unlisted slugs fall back to an icon. */

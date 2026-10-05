@@ -338,7 +338,7 @@ export default function ProfileScreen() {
                 title="Offers"
                 subtitle="Proposals you have sent and received"
                 chevron={chevron}
-                onPress={() => router.push('/(app)/offers')}
+                onPress={() => router.push('/(app)/(tabs)/matches?tab=received')}
               />
               <Divider tone="soft" inset={spacing.lg + 38 + spacing.md} />
               <ListRow

@@ -125,7 +125,7 @@ export default function MessagesScreen() {
               body="A chat opens by itself the moment you and someone else agree a trade — there is nothing to start here."
               actionLabel="See your offers"
               actionVariant="secondary"
-              onAction={() => router.push('/(app)/offers')}
+              onAction={() => router.push('/(app)/(tabs)/matches?tab=received')}
             />
           )
         }

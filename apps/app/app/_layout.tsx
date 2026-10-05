@@ -7,6 +7,8 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import {
+  InterTight_400Regular,
+  InterTight_500Medium,
   InterTight_600SemiBold,
   InterTight_700Bold,
   InterTight_800ExtraBold,
@@ -35,6 +37,8 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    InterTight_400Regular,
+    InterTight_500Medium,
     InterTight_600SemiBold,
     InterTight_700Bold,
     InterTight_800ExtraBold,
