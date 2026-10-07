@@ -59,8 +59,10 @@ recommendationsRoute.get('/', authMiddleware, requireAuth, async (c) => {
 
   const referencedListingIds = new Set<string>();
   for (const v of views) referencedListingIds.add(v.itemId);
-  for (const o of outgoingOffers) if (o.requestedListingId) referencedListingIds.add(o.requestedListingId);
-  for (const t of completedTrades) if (t.requestedListingId) referencedListingIds.add(t.requestedListingId);
+  for (const o of outgoingOffers)
+    if (o.requestedListingId) referencedListingIds.add(o.requestedListingId);
+  for (const t of completedTrades)
+    if (t.requestedListingId) referencedListingIds.add(t.requestedListingId);
 
   const referencedListings = await repos.market.listingsByIds([...referencedListingIds]);
 

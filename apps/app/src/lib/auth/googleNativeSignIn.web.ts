@@ -12,7 +12,10 @@ export function isGoogleNativeSignInAvailable(): boolean {
   return false;
 }
 
-export function configureGoogleSignIn(_params: { webClientId: string; iosClientId?: string }): void {
+export function configureGoogleSignIn(_params: {
+  webClientId: string;
+  iosClientId?: string;
+}): void {
   // No-op — web never calls this; `signInWithGoogle` branches to the
   // expo-auth-session flow before reaching anything in this module.
 }

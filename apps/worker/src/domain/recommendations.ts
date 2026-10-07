@@ -169,7 +169,10 @@ export function buildPreferenceProfile(signals: BehaviorSignal[], now: number): 
   const categoryPrice = new Map<string, number>();
   for (const [categoryId, weightSum] of priceWeightByCategory) {
     if (weightSum > 0) {
-      categoryPrice.set(categoryId, (priceWeightedTotalByCategory.get(categoryId) ?? 0) / weightSum);
+      categoryPrice.set(
+        categoryId,
+        (priceWeightedTotalByCategory.get(categoryId) ?? 0) / weightSum,
+      );
     }
   }
 
@@ -249,7 +252,12 @@ export function scoreCandidate(
   // a price signal is not evidence of a mismatch.
   const categoryAvgPrice = profile.categoryPrice.get(item.categoryId) ?? null;
   let priceAffinity = 0.5;
-  if (personalizing && categoryAvgPrice != null && categoryAvgPrice > 0 && item.pricing.priceAmount != null) {
+  if (
+    personalizing &&
+    categoryAvgPrice != null &&
+    categoryAvgPrice > 0 &&
+    item.pricing.priceAmount != null
+  ) {
     const relGap = Math.abs(item.pricing.priceAmount - categoryAvgPrice) / categoryAvgPrice;
     priceAffinity = Math.exp(-relGap);
   }

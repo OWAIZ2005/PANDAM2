@@ -131,7 +131,7 @@ describe('offer -> transaction -> review journey', () => {
         testEnv,
       ),
     );
-    expect(aliceListing.data.item.status).toBe('archived');
+    expect(aliceListing.data.item.status).toBe('traded');
 
     // --- A conversation exists and both parties can message ------------
     const convosForBob = await json<Ok<{ items: { id: string }[] }>>(

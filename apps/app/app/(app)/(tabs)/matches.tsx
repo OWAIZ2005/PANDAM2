@@ -175,37 +175,37 @@ function ReceivedListingGroup({ group }: { group: ListingGroup }) {
           )
         }
       >
-      <Row gap="md" align="center">
-        <CoverTile
-          seed={group.itemId}
-          uri={thumbUri}
-          height={56}
-          radius="md"
-          style={{ width: 56 }}
-          icon={
-            <Ionicons
-              name={categoryIcon(item.data?.category.slug ?? '')}
-              size={22}
-              color="rgba(255,255,255,0.7)"
-            />
-          }
-        />
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text variant="label" style={{ textTransform: 'uppercase', color: colors.textFaint }}>
-            Your listing
-          </Text>
-          <Text variant="bodyStrong" numberOfLines={1}>
-            {title}
-          </Text>
-          <Row gap="sm">
-            <Badge label={`${viewCount} ${viewCount === 1 ? 'view' : 'views'}`} kind="neutral" />
-            <Badge
-              label={`${interestedCount} interested`}
-              kind={interestedCount > 0 ? 'match' : 'neutral'}
-            />
-          </Row>
-        </View>
-      </Row>
+        <Row gap="md" align="center">
+          <CoverTile
+            seed={group.itemId}
+            uri={thumbUri}
+            height={56}
+            radius="md"
+            style={{ width: 56 }}
+            icon={
+              <Ionicons
+                name={categoryIcon(item.data?.category.slug ?? '')}
+                size={22}
+                color="rgba(255,255,255,0.7)"
+              />
+            }
+          />
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text variant="label" style={{ textTransform: 'uppercase', color: colors.textFaint }}>
+              Your listing
+            </Text>
+            <Text variant="bodyStrong" numberOfLines={1}>
+              {title}
+            </Text>
+            <Row gap="sm">
+              <Badge label={`${viewCount} ${viewCount === 1 ? 'view' : 'views'}`} kind="neutral" />
+              <Badge
+                label={`${interestedCount} interested`}
+                kind={interestedCount > 0 ? 'match' : 'neutral'}
+              />
+            </Row>
+          </View>
+        </Row>
       </Press>
 
       <Stack gap="sm" style={{ marginTop: spacing.md }}>
@@ -478,7 +478,9 @@ export default function MatchesScreen() {
               <ErrorState error={incoming.error} onRetry={() => void incoming.refetch()} />
             ) : (
               <EmptyState
-                icon={<Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />}
+                icon={
+                  <Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />
+                }
                 title="No interest yet"
                 body="When someone wants to trade for something you have, it arrives here."
               />
@@ -527,7 +529,9 @@ export default function MatchesScreen() {
               <ErrorState error={offersTab.error} onRetry={() => void offersTab.refetch()} />
             ) : (
               <EmptyState
-                icon={<Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />}
+                icon={
+                  <Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />
+                }
                 title="No offers sent"
                 body="Open any listing you like and offer one of your own items against it."
                 actionLabel="Browse listings"

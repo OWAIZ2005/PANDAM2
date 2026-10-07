@@ -77,7 +77,12 @@ function SectionTitle({
     >
       <View>
         <Text
-          style={{ fontFamily: 'InterTight_700Bold', fontSize: 12.5, letterSpacing: 1, color: MUTED }}
+          style={{
+            fontFamily: 'InterTight_700Bold',
+            fontSize: 12.5,
+            letterSpacing: 1,
+            color: MUTED,
+          }}
         >
           {number}
         </Text>
@@ -533,10 +538,9 @@ export default function HomeScreen() {
                 }}
               >
                 You have{' '}
-                <Text style={{ fontFamily: 'InterTight_700Bold', color: ORANGE }}>
-                  web design
-                </Text>{' '}
-                and need <Text style={{ fontFamily: 'InterTight_700Bold', color: INK }}>photography</Text>.
+                <Text style={{ fontFamily: 'InterTight_700Bold', color: ORANGE }}>web design</Text>{' '}
+                and need{' '}
+                <Text style={{ fontFamily: 'InterTight_700Bold', color: INK }}>photography</Text>.
                 Someone else has photography and needs web design. PANDAM spots the mirror — no
                 money changes hands.
               </Text>
