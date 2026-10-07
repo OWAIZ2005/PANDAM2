@@ -23,6 +23,7 @@ import { offersRoute } from './offers';
 import { paymentsRoute } from './payments';
 import { PLANNED_GROUPS, plannedGroupRouter } from './planned';
 import { profilesRoute } from './profiles';
+import { recommendationsRoute } from './recommendations';
 import { reportsRoute } from './reports';
 import { reviewsRoute } from './reviews';
 import { transactionsRoute } from './transactions';
@@ -97,6 +98,12 @@ const IMPLEMENTED = [
     endpoints: ['GET /', 'GET /:id', 'POST /:id/status'],
   },
   {
+    name: 'recommendations',
+    summary:
+      'Behavior-Based Recommendation Engine — deterministic, rule-based "Recommended For You" (no AI/ML)',
+    endpoints: ['GET /'],
+  },
+  {
     name: 'reviews',
     summary: 'Reviews left after a completed barter transaction',
     endpoints: ['GET /users/:userId', 'POST /'],
@@ -136,6 +143,7 @@ const DB_GROUPS = [
   'offers',
   'conversations',
   'transactions',
+  'recommendations',
   'reviews',
   'notifications',
   'reports',
@@ -176,6 +184,7 @@ export function createApiV1(deps: AppDeps = {}) {
   apiV1.route('/offers', offersRoute);
   apiV1.route('/conversations', conversationsRoute);
   apiV1.route('/transactions', transactionsRoute);
+  apiV1.route('/recommendations', recommendationsRoute);
   apiV1.route('/reviews', reviewsRoute);
   apiV1.route('/notifications', notificationsRoute);
   apiV1.route('/reports', reportsRoute);

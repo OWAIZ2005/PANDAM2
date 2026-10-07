@@ -2,7 +2,7 @@
  * Listings ("I HAVE") and needs ("I NEED"). Identical endpoints, one module
  * parameterised by `kind`.
  */
-import { type MarketItem, type Paginated } from '@pandam/types';
+import { type MarketItem, type Paginated, type RecommendedItem } from '@pandam/types';
 import {
   type CreateListingInput,
   type CreateNeedInput,
@@ -58,4 +58,17 @@ export const marketApi = {
 
   setStatus: (kind: MarketKind, id: string, body: StatusInput) =>
     api.post<{ item: MarketItem }>(`${base(kind)}/${id}/status`, body),
+};
+
+/**
+ * Behavior-Based Recommendation Engine — "Recommended For You". Separate
+ * from `marketApi` because it is read-only and single-shape (listings only,
+ * never needs), not because it is a parallel system: the server reuses the
+ * exact same listing rows and availability rules as `marketApi.discover`.
+ */
+export const recommendationsApi = {
+  list: (limit = 10) =>
+    api.get<{ items: RecommendedItem[]; personalized: boolean }>(
+      `/api/v1/recommendations?limit=${limit}`,
+    ),
 };

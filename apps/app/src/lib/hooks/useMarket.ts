@@ -10,7 +10,7 @@ import {
 } from '@pandam/validation';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { type MarketKind, marketApi } from '@/lib/api/market';
+import { type MarketKind, marketApi, recommendationsApi } from '@/lib/api/market';
 import { qk } from '@/lib/query/keys';
 
 export type DiscoverParams = {
@@ -45,6 +45,19 @@ export function useListingCities() {
     queryKey: qk.market.cities,
     queryFn: async () => (await marketApi.cities()).items,
     staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * "Recommended For You" — the Behavior-Based Recommendation Engine's output.
+ * Same staleness window as `useDiscover`: personalized ranking shifts with
+ * fresh activity, but not fast enough to need anything shorter.
+ */
+export function useRecommendations(limit = 10) {
+  return useQuery({
+    queryKey: qk.recommendations(limit),
+    queryFn: () => recommendationsApi.list(limit),
+    staleTime: 20_000,
   });
 }
 

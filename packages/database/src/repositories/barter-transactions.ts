@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 
 import { newId } from '../id';
 import {
@@ -7,6 +7,7 @@ import {
   type NewBarterTransactionRow,
   barterTransactions,
 } from '../schema/barter-transactions';
+import { offers } from '../schema/offers';
 
 import { type Database, firstOrNull, now, one, touch } from './helpers';
 
@@ -63,6 +64,48 @@ export function barterTransactionsRepository(db: Database) {
         .where(eq(barterTransactions.id, id))
         .returning();
       return firstOrNull(rows);
+    },
+
+    /**
+     * Every `completed` trade this user was a party to, with the realised
+     * offer's item ids attached — a read over the existing transaction +
+     * offer tables, joined once here rather than N+1'd by callers. Used by
+     * the recommendation engine's "successful trade" signal (the strongest
+     * one); never written to by it.
+     */
+    async listCompletedForUser(
+      userId: string,
+      limit = 200,
+    ): Promise<
+      {
+        completedAt: number | null;
+        offerFromUserId: string;
+        requestedListingId: string | null;
+        requestedNeedId: string | null;
+        offeredListingId: string;
+      }[]
+    > {
+      const rows = await db
+        .select({
+          completedAt: barterTransactions.completedAt,
+          offerFromUserId: offers.fromUserId,
+          requestedListingId: offers.requestedListingId,
+          requestedNeedId: offers.requestedNeedId,
+          offeredListingId: offers.offeredListingId,
+        })
+        .from(barterTransactions)
+        .innerJoin(offers, eq(offers.id, barterTransactions.offerId))
+        .where(
+          and(
+            eq(barterTransactions.status, 'completed'),
+            or(
+              eq(barterTransactions.initiatedByUserId, userId),
+              eq(barterTransactions.counterpartyUserId, userId),
+            ),
+          ),
+        )
+        .limit(limit);
+      return rows;
     },
   };
 }

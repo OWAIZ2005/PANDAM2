@@ -168,11 +168,26 @@ export default function NewOfferScreen() {
   const pickPhoto = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      // No native crop step here: `allowsEditing: true` is known to silently
+      // fail to return a result in Expo Go (it needs a real dev/production
+      // build) — see PhotoPicker.tsx, which already picks without it.
       quality: 0.8,
     });
-    const uri = res.canceled ? null : res.assets[0]?.uri;
+    const asset = res.canceled ? null : res.assets[0];
+    const uri = asset?.uri;
     if (!uri) return;
+    // `fileSize` is only populated on some platforms, but when present it's
+    // the single most useful log line for diagnosing an upload that fails
+    // with a generic "could not reach the API" — a large file on a slow/
+    // unstable connection fails exactly the same way as the server being
+    // genuinely unreachable.
+    console.log('[offer/new] picked photo', {
+      uri,
+      fileSize: asset.fileSize,
+      mimeType: asset.mimeType,
+      width: asset.width,
+      height: asset.height,
+    });
     setPhoto(uri);
     setPhotoKey(null);
     setUploadError(null);
@@ -202,9 +217,14 @@ export default function NewOfferScreen() {
       try {
         imageKey = (await uploadOfferImage(photo)).imageKey;
         setPhotoKey(imageKey);
-      } catch {
+      } catch (err) {
+        // Surface the real reason (network vs. server-rejected vs. unknown)
+        // instead of one generic sentence — this is the only signal we get
+        // for diagnosing an upload failure on a device we can't inspect.
+        const detail =
+          err instanceof ApiError ? err.message : err instanceof Error ? err.message : null;
         setUploadError(
-          'The photo could not be uploaded. Try again, or remove it and send without it.',
+          `The photo could not be uploaded${detail ? ` (${detail})` : ''}. Try again, or remove it and send without it.`,
         );
         return;
       } finally {

@@ -42,7 +42,12 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   let res: Response;
   try {
     res = await fetch(`${clientEnv.apiUrl}${path}`, { ...init, headers, credentials: 'include' });
-  } catch {
+  } catch (err) {
+    // The generic ApiError below is all the UI ever shows — this is the only
+    // place the raw fetch failure (name/message, e.g. a native "Network
+    // request failed" vs. an abort vs. something else) is ever visible, so
+    // log it rather than silently discarding it.
+    console.error('[apiFetch] fetch failed for', path, err);
     throw new ApiError('Could not reach the PANDAM API.', 'network_error', 0);
   }
 

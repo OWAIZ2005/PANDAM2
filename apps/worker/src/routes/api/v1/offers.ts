@@ -84,6 +84,14 @@ offersRoute.post('/', authMiddleware, requireAuth, async (c) => {
   if (input.imageKey && !input.imageKey.startsWith(`offers/${user.id}/`)) {
     throw new ApiError('forbidden', 'That image does not belong to you.');
   }
+  const duplicate = await repos.offers.findPendingDuplicate(
+    user.id,
+    input.requestedListingId ?? null,
+    input.requestedNeedId ?? null,
+  );
+  if (duplicate) {
+    throw new ApiError('unprocessable', 'You already have a pending request for this item.');
+  }
   // `matchId` is not cross-checked against a persisted `matches` row: the
   // deterministic matches this app shows today are computed on the fly (see
   // `routes/api/v1/matches.ts`) and never written to that table.

@@ -27,6 +27,7 @@ const CATEGORY_ICON: Record<string, IconName> = {
   'home-and-garden': 'leaf',
   'sports-and-outdoors': 'bicycle',
   food: 'restaurant',
+  grocery: 'basket',
   gaming: 'game-controller',
   other: 'ellipsis-horizontal',
 };

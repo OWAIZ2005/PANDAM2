@@ -269,6 +269,14 @@ export interface MarketItem {
   viewCount?: number;
 }
 
+/**
+ * A listing scored by the Behavior-Based Recommendation Engine (see
+ * `apps/worker/src/domain/recommendations.ts`) — a `MarketItem` plus a
+ * human-readable, deterministically-templated reason it was picked. Never
+ * carries the raw numeric score; see that module's doc comment for why.
+ */
+export type RecommendedItem = MarketItem & { reason: string };
+
 /** One uploaded listing photo. `url` is relative to the API origin. */
 export interface ItemImage {
   id: string;

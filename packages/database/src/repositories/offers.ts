@@ -25,6 +25,28 @@ export function offersRepository(db: Database) {
       return firstOrNull(rows);
     },
 
+    /**
+     * An existing `pending` offer from this sender against this exact
+     * requested item (listing XOR need), if any. Used to reject a duplicate
+     * request before it is created — one pending ask per (sender, item) at a
+     * time; the sender can always try again after a reject/cancel/expiry.
+     */
+    async findPendingDuplicate(
+      fromUserId: string,
+      requestedListingId: string | null,
+      requestedNeedId: string | null,
+    ): Promise<OfferRow | null> {
+      const itemClause = requestedListingId
+        ? eq(offers.requestedListingId, requestedListingId)
+        : eq(offers.requestedNeedId, requestedNeedId!);
+      const rows = await db
+        .select()
+        .from(offers)
+        .where(and(eq(offers.fromUserId, fromUserId), eq(offers.status, 'pending'), itemClause))
+        .limit(1);
+      return firstOrNull(rows);
+    },
+
     async listIncoming(userId: string, status?: OfferStatus): Promise<OfferRow[]> {
       const where = status
         ? and(eq(offers.toUserId, userId), eq(offers.status, status))

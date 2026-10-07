@@ -35,7 +35,7 @@ import {
 import { mediaSrc } from '@/lib/api/media';
 import { useSession } from '@/lib/auth/hooks';
 import { useBrowseCategories } from '@/lib/hooks/useCategories';
-import { useDiscover, useMyItems } from '@/lib/hooks/useMarket';
+import { useDiscover, useMyItems, useRecommendations } from '@/lib/hooks/useMarket';
 import { useMatches } from '@/lib/hooks/useMatches';
 
 /** Swiss editorial palette — exact spec values, deliberately tiny. */
@@ -181,6 +181,11 @@ export default function HomeScreen() {
   );
   const myHave = demoMergeList(useMyItems('listing'), demoMyListings);
   const myNeed = demoMergeList(useMyItems('need'), demoMyNeeds);
+  // Behavior-Based Recommendation Engine (see apps/worker/src/domain/
+  // recommendations.ts) — deterministic, rule-based, no AI. No demo-data
+  // fallback needed: the engine's own cold-start path already guarantees a
+  // non-empty, non-personalized list for a brand-new user.
+  const recommended = useRecommendations(8);
 
   const goDiscover = useCallback(
     (categoryId?: string) =>
@@ -443,6 +448,29 @@ export default function HomeScreen() {
               </Rail>
             )}
           </View>
+
+          {/* ------------------------------------------- recommended ----- */}
+          {recommended.isPending || (recommended.data?.items.length ?? 0) > 0 ? (
+            <View>
+              <SectionTitle number="05" title="Recommended for you" />
+              {recommended.isPending ? (
+                <SkeletonList count={2} />
+              ) : recommended.isError ? (
+                <ErrorState error={recommended.error} onRetry={() => void recommended.refetch()} />
+              ) : (
+                <Rail>
+                  {(recommended.data?.items ?? []).map((it) => (
+                    <ItemCard
+                      key={it.id}
+                      item={it}
+                      variant="rail"
+                      onPress={() => router.push(`/(app)/listing/${it.id}`)}
+                    />
+                  ))}
+                </Rail>
+              )}
+            </View>
+          ) : null}
 
           {/* ------------------------------------------- match counters -- */}
           <View

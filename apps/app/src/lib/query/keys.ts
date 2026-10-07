@@ -13,6 +13,7 @@ export const qk = {
     detail: (kind: MarketKind, id: string) => ['market', kind, 'detail', id] as const,
     cities: ['market', 'cities'] as const,
   },
+  recommendations: (limit: number) => ['recommendations', limit] as const,
   offers: {
     all: ['offers'] as const,
     incoming: (status?: string) => ['offers', 'incoming', status ?? 'all'] as const,
