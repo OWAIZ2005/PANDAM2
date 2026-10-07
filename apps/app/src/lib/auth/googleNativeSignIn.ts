@@ -72,6 +72,13 @@ export async function signInWithGoogleNativeSdk(): Promise<NativeGoogleResult> {
     if (Platform.OS === 'android') {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     }
+    // Forget the previously selected account so Google shows the account
+    // chooser every time instead of silently reusing the last one.
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // No cached session to clear — nothing to do.
+    }
     const response = await GoogleSignin.signIn();
     if (response.type === 'cancelled') return null;
     const { idToken, user } = response.data;
