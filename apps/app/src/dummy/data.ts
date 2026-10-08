@@ -528,7 +528,13 @@ export const demoOthersListings = demoListings.filter((l) => l.ownerId !== me.id
 
 const ref = (id: string) => {
   const it = demoItem(id)!;
-  return { id: it.id, title: it.title, type: it.type, category: it.category };
+  return {
+    id: it.id,
+    title: it.title,
+    type: it.type,
+    category: it.category,
+    imageUrl: it.images?.[0]?.url ?? null,
+  };
 };
 
 function match(
@@ -625,6 +631,7 @@ function msg(id: string, conv: string, from: UserKey, body: string, agoMin: numb
     senderId: demoUsers[from].id,
     isMine: from === DEMO_ME,
     body,
+    imageUrl: null,
     createdAt: NOW - agoMin * 60 * 1000,
     editedAt: null,
   };

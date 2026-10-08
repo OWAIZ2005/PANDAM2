@@ -17,7 +17,6 @@ import {
   spacing,
 } from '@pandam/ui';
 
-import { demoPhoto } from '@/dummy';
 import { mediaSrc } from '@/lib/api/media';
 import { categoryIcon } from '@/lib/icons';
 
@@ -82,12 +81,12 @@ function Leg({
   );
 }
 
-/** An item as a physical object on the match stage: its photo, or its cover. */
-function ObjectFace({ id, slug }: { id: string; slug: string }) {
+/** An item as a physical object on the match stage: its real photo, or its cover. */
+function ObjectFace({ id, slug, imageUrl }: { id: string; slug: string; imageUrl: string | null }) {
   return (
     <CoverTile
       seed={id}
-      uri={demoPhoto(id)}
+      uri={mediaSrc(imageUrl)}
       height={200}
       radius="none"
       icon={<Ionicons name={categoryIcon(slug)} size={52} color="rgba(255,253,249,0.6)" />}
@@ -144,8 +143,20 @@ export function MatchCard({ match, onPress }: MatchCardProps) {
       >
         <ConnectingPair
           size={96}
-          left={<ObjectFace id={match.you.have.id} slug={match.you.have.category.slug} />}
-          right={<ObjectFace id={match.them.have.id} slug={match.them.have.category.slug} />}
+          left={
+            <ObjectFace
+              id={match.you.have.id}
+              slug={match.you.have.category.slug}
+              imageUrl={match.you.have.imageUrl}
+            />
+          }
+          right={
+            <ObjectFace
+              id={match.them.have.id}
+              slug={match.them.have.category.slug}
+              imageUrl={match.them.have.imageUrl}
+            />
+          }
           link={<Ionicons name="swap-horizontal" size={18} color={colors.textInverse} />}
         />
       </Gradient>

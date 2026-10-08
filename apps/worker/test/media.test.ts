@@ -67,6 +67,25 @@ async function createListing(token: string, title = 'A bike'): Promise<MarketIte
   return (await json<Ok<{ item: MarketItem }>>(res)).data.item;
 }
 
+async function createNeed(token: string, title = 'I need a bike'): Promise<MarketItem> {
+  const res = await ctx.makeApp().request(
+    '/api/v1/needs',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...bearer(token) },
+      body: JSON.stringify({
+        categoryId: catId,
+        type: 'product',
+        title,
+        description: 'Mine was stolen, sadly.',
+        status: 'published',
+      }),
+    },
+    env,
+  );
+  return (await json<Ok<{ item: MarketItem }>>(res)).data.item;
+}
+
 /** A multipart body carrying one "image" of the given type and size. */
 function imageForm(type = 'image/jpeg', bytes = 32): FormData {
   const form = new FormData();
@@ -214,34 +233,74 @@ describe('listing photos', () => {
     expect(res.status).toBe(503);
   });
 
-  it('needs are not photographable', async () => {
-    const me = await register('needy');
-    const res = await ctx.makeApp().request(
-      '/api/v1/needs',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...bearer(me.token) },
-        body: JSON.stringify({
-          categoryId: catId,
-          type: 'product',
-          title: 'I need a bike',
-          description: 'Mine was stolen, sadly.',
-          status: 'published',
-        }),
-      },
-      env,
-    );
-    const need = (await json<Ok<{ item: MarketItem }>>(res)).data.item;
-    expect(need.images).toBeUndefined();
+});
 
-    const attempt = await ctx
+describe('need photos', () => {
+  const uploadNeed = (needId: string, token: string, form: FormData) =>
+    ctx
       .makeApp()
       .request(
-        `/api/v1/needs/${need.id}/images`,
-        { method: 'POST', headers: bearer(me.token), body: imageForm() },
+        `/api/v1/needs/${needId}/images`,
+        { method: 'POST', headers: bearer(token), body: form },
         env,
       );
-    expect(attempt.status).toBe(404);
+
+  it('uploads a reference photo to R2 and exposes it on the need', async () => {
+    const me = await register('wanter');
+    const need = await createNeed(me.token);
+
+    const res = await uploadNeed(need.id, me.token, imageForm());
+    expect(res.status).toBe(201);
+    const { image } = (await json<Ok<{ image: { id: string; url: string } }>>(res)).data;
+
+    expect(bucket.keys()).toHaveLength(1);
+    expect(bucket.keys()[0]).toMatch(new RegExp(`^needs/${need.id}/[0-9a-f-]+\\.jpg$`));
+    expect(image.url).toBe(`/api/v1/media/${bucket.keys()[0]}`);
+
+    const detail = await ctx.makeApp().request(`/api/v1/needs/${need.id}`, {}, env);
+    const item = (await json<Ok<{ item: MarketItem }>>(detail)).data.item;
+    expect(item.images).toEqual([{ id: image.id, url: image.url, sortOrder: 0 }]);
+  });
+
+  it('serves a need photo back through /media without auth', async () => {
+    const me = await register('wanter2');
+    const need = await createNeed(me.token);
+    const res = await uploadNeed(need.id, me.token, imageForm());
+    const { image } = (await json<Ok<{ image: { url: string } }>>(res)).data;
+
+    const fetched = await ctx.makeApp().request(image.url, {}, env);
+    expect(fetched.status).toBe(200);
+    expect(fetched.headers.get('content-type')).toBe('image/jpeg');
+  });
+
+  it('refuses a need somebody else owns', async () => {
+    const owner = await register('needowner');
+    const stranger = await register('needstranger');
+    const need = await createNeed(owner.token);
+
+    const res = await uploadNeed(need.id, stranger.token, imageForm());
+    expect(res.status).toBe(403);
+    expect(bucket.size()).toBe(0);
+  });
+
+  it('deletes a need photo and its object', async () => {
+    const me = await register('needdeleter');
+    const need = await createNeed(me.token);
+    const res = await uploadNeed(need.id, me.token, imageForm());
+    const { image } = (await json<Ok<{ image: { id: string } }>>(res)).data;
+
+    const del = await ctx
+      .makeApp()
+      .request(
+        `/api/v1/needs/${need.id}/images/${image.id}`,
+        { method: 'DELETE', headers: bearer(me.token) },
+        env,
+      );
+    expect(del.status).toBe(200);
+    expect(bucket.size()).toBe(0);
+
+    const detail = await ctx.makeApp().request(`/api/v1/needs/${need.id}`, {}, env);
+    expect((await json<Ok<{ item: MarketItem }>>(detail)).data.item.images).toEqual([]);
   });
 });
 

@@ -24,6 +24,7 @@ export * from './categories';
 export * from './listings';
 export * from './listing-images';
 export * from './needs';
+export * from './need-images';
 export * from './matches';
 export * from './offers';
 export * from './conversations';

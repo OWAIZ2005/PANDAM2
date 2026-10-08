@@ -86,6 +86,30 @@ export function conversationsRepository(db: Database) {
         );
     },
 
+    async setTyping(conversationId: string, userId: string): Promise<void> {
+      await db
+        .update(conversationParticipants)
+        .set({ typingAt: now() })
+        .where(
+          and(
+            eq(conversationParticipants.conversationId, conversationId),
+            eq(conversationParticipants.userId, userId),
+          ),
+        );
+    },
+
+    async clearTyping(conversationId: string, userId: string): Promise<void> {
+      await db
+        .update(conversationParticipants)
+        .set({ typingAt: null })
+        .where(
+          and(
+            eq(conversationParticipants.conversationId, conversationId),
+            eq(conversationParticipants.userId, userId),
+          ),
+        );
+    },
+
     async archive(id: string): Promise<ConversationRow | null> {
       const rows = await db
         .update(conversations)

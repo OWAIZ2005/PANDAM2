@@ -46,6 +46,10 @@ export const conversationParticipants = sqliteTable(
     role: text('role', { enum: CONVERSATION_ROLE }).notNull().default('member'),
     joinedAt: timestampNow('joined_at'),
     lastReadAt: nullableTimestamp('last_read_at'),
+    /** Last time this participant signalled "typing". Short-lived — the API
+     *  treats anything older than its TTL as stale, so a lost stop event can
+     *  never wedge the indicator on. */
+    typingAt: nullableTimestamp('typing_at'),
   },
   (t) => [
     primaryKey({ columns: [t.conversationId, t.userId] }),

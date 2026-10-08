@@ -1,7 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, View } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Platform, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { type MessageView } from '@pandam/types';
 import {
@@ -10,6 +18,7 @@ import {
   IconButton,
   Input,
   Press,
+  Reveal,
   Row,
   Screen,
   SkeletonList,
@@ -18,19 +27,22 @@ import {
   layout,
   radii,
   spacing,
+  useMotionOK,
 } from '@pandam/ui';
 
 import { IS_DEMO_DATA, demoConversations, demoMessages, demoQuery } from '@/dummy';
 import { ErrorState } from '@/components/states';
 import { TradeContextCard, tradeSubtitle } from '@/components/TradeContextCard';
+import { TypingIndicator } from '@/components/TypingIndicator';
 import { useOffer } from '@/lib/hooks/useOffers';
-import { mediaSrc } from '@/lib/api/media';
+import { mediaSrc, uploadMessageImage } from '@/lib/api/media';
 import { dayLabel, timeOfDay } from '@/lib/format';
 import {
   useConversation,
   useMarkConversationRead,
   useMessages,
   useSendMessage,
+  useTypingIndicator,
 } from '@/lib/hooks/useConversations';
 
 /** A message, plus what its neighbours mean for how it should be drawn. */
@@ -80,65 +92,151 @@ function group(messages: MessageView[]): Rendered[] {
  * Stamping every bubble with a time — which is what this screen did before —
  * turns a two-line exchange into a wall of metadata, and the times are all
  * within a minute of each other anyway.
+ *
+ * Bubbles are editorial, not pill-shaped: a modest 8px radius that squares
+ * off on the speaker's side mid-run, a thin black hairline on incoming
+ * copy, flat PANDAM orange on outgoing — the same structural language as
+ * every card elsewhere in the product, not a borrowed messaging-app style.
  */
 function Bubble({ item }: { item: Rendered }) {
   const { message, startsRun, endsRun } = item;
   const mine = message.isMine;
 
   return (
-    <View
-      style={{
-        alignSelf: mine ? 'flex-end' : 'flex-start',
-        maxWidth: '82%',
-        alignItems: mine ? 'flex-end' : 'flex-start',
-        marginTop: startsRun ? spacing.md : 2,
-      }}
-    >
+    <Reveal offset={8} style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}>
       <View
         style={{
-          backgroundColor: mine ? colors.accent : colors.surface,
-          borderWidth: mine ? 0 : 1,
-          borderColor: colors.border,
-          borderRadius: radii.lg,
-          // The corner facing this speaker's side squares off mid-run, so a
-          // run reads as one block of speech rather than three separate ones.
-          borderTopRightRadius: mine && !startsRun ? radii.xs : radii.lg,
-          borderBottomRightRadius: mine && !endsRun ? radii.xs : radii.lg,
-          borderTopLeftRadius: !mine && !startsRun ? radii.xs : radii.lg,
-          borderBottomLeftRadius: !mine && !endsRun ? radii.xs : radii.lg,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
+          maxWidth: '82%',
+          alignItems: mine ? 'flex-end' : 'flex-start',
+          marginTop: startsRun ? spacing.md : 2,
         }}
       >
-        <Text
+        <View
           style={{
-            lineHeight: 20,
-            color: mine ? colors.textInverse : colors.textPrimary,
+            backgroundColor: mine ? colors.accent : colors.surface,
+            borderWidth: mine ? 0 : layout.hairline,
+            borderColor: colors.border,
+            borderRadius: radii.lg,
+            // The corner facing this speaker's side squares off mid-run, so a
+            // run reads as one block of speech rather than three separate ones.
+            borderTopRightRadius: mine && !startsRun ? radii.xs : radii.lg,
+            borderBottomRightRadius: mine && !endsRun ? radii.xs : radii.lg,
+            borderTopLeftRadius: !mine && !startsRun ? radii.xs : radii.lg,
+            borderBottomLeftRadius: !mine && !endsRun ? radii.xs : radii.lg,
+            padding: message.imageUrl ? spacing.xs : undefined,
+            paddingHorizontal: message.imageUrl ? undefined : spacing.md,
+            paddingVertical: message.imageUrl ? undefined : spacing.sm,
           }}
         >
-          {message.body}
-        </Text>
-      </View>
+          {message.imageUrl ? (
+            <Image
+              source={{ uri: message.imageUrl }}
+              style={{
+                width: 200,
+                height: 150,
+                borderRadius: radii.md,
+                marginBottom: message.body ? spacing.xs : 0,
+              }}
+              resizeMode="cover"
+            />
+          ) : null}
+          {message.body ? (
+            <Text
+              variant="bodySm"
+              style={{
+                lineHeight: 20,
+                marginHorizontal: message.imageUrl ? spacing.xs : 0,
+                marginBottom: message.imageUrl ? spacing.xxs : 0,
+                color: mine ? colors.textInverse : colors.textPrimary,
+              }}
+            >
+              {message.body}
+            </Text>
+          ) : null}
+        </View>
 
-      {endsRun ? (
-        <Text variant="caption" tone="faint" style={{ marginTop: 3, marginHorizontal: spacing.xs }}>
-          {timeOfDay(message.createdAt)}
-        </Text>
-      ) : null}
-    </View>
+        {endsRun ? (
+          <Text
+            variant="caption"
+            tone="faint"
+            style={{ marginTop: 3, marginHorizontal: spacing.xs, fontSize: 10.5 }}
+          >
+            {timeOfDay(message.createdAt)}
+          </Text>
+        ) : null}
+      </View>
+    </Reveal>
   );
 }
 
-/** The "Today" / "Yesterday" rule between days. */
+/** The "Today" / "Yesterday" rule between days — a Swiss hairline, not a pill. */
 function DaySeparator({ label }: { label: string }) {
   return (
     <Row gap="md" align="center" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-      <Text variant="caption" tone="muted">
+      <View style={{ flex: 1, height: layout.hairline, backgroundColor: colors.borderSoft }} />
+      <Text variant="caption" tone="faint" caps style={{ letterSpacing: 1 }}>
         {label}
       </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      <View style={{ flex: 1, height: layout.hairline, backgroundColor: colors.borderSoft }} />
     </Row>
+  );
+}
+
+/**
+ * The composer's send action. A refined PANDAM square, not the generic
+ * circular messaging-app button — orange with a black edge once there is
+ * something to send, a flat muted square otherwise. A quick weighted tap
+ * (1 → 0.94 → 1) stands in for the press ripple every other primary action
+ * in the product already uses.
+ */
+function SendButton({ active, disabled, onPress }: { active: boolean; disabled: boolean; onPress: () => void }) {
+  const motionOK = useMotionOK();
+  const scale = useSharedValue(1);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const handlePress = () => {
+    if (motionOK) {
+      scale.set(withSequence(withTiming(0.94, { duration: 90 }), withTiming(1, { duration: 110 })));
+    }
+    if (Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    }
+    onPress();
+  };
+
+  return (
+    <Press
+      scale="none"
+      dim={false}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel="Send message"
+      onPress={handlePress}
+      hitSlop={6}
+      style={{ borderRadius: radii.pill }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: 40,
+            height: 40,
+            borderRadius: radii.pill,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: active ? colors.accent : colors.surfaceMuted,
+            borderWidth: active ? layout.hairline : 0,
+            borderColor: colors.border,
+          },
+          style,
+        ]}
+      >
+        <Ionicons
+          name="arrow-up"
+          size={18}
+          color={active ? colors.textInverse : colors.textFaint}
+        />
+      </Animated.View>
+    </Press>
   );
 }
 
@@ -156,7 +254,11 @@ export default function ChatScreen() {
     : liveMessages;
   const send = useSendMessage(conversationId!);
   const markRead = useMarkConversationRead(conversationId!);
+  const typing = useTypingIndicator(conversationId);
   const [draft, setDraft] = useState('');
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
   const listRef = useRef<FlatList<Rendered>>(null);
 
   useEffect(() => {
@@ -170,15 +272,55 @@ export default function ChatScreen() {
   const offer = useOffer(conversation.data?.offerId ?? undefined);
   const name = person?.displayName ?? 'Chat';
   const rendered = useMemo(() => group(messages.data ?? []), [messages.data]);
-  const canSend = !!draft.trim() && !send.isPending;
+  const canSend = (!!draft.trim() || !!pendingImage) && !send.isPending && !uploadingImage;
 
-  const handleSend = () => {
+  const pickImage = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    const uri = res.canceled ? null : res.assets[0]?.uri;
+    if (uri) {
+      setPendingImage(uri);
+      setAttachError(null);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!canSend) return;
     const body = draft.trim();
-    if (!body) return;
+    const localImage = pendingImage;
     setDraft('');
-    send.mutate(body, {
-      onSuccess: () => setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50),
-    });
+    setPendingImage(null);
+    setAttachError(null);
+    typing.stopTyping();
+
+    let imageKey: string | undefined;
+    if (localImage) {
+      setUploadingImage(true);
+      try {
+        imageKey = (await uploadMessageImage(conversationId!, localImage)).imageKey;
+      } catch {
+        setUploadingImage(false);
+        setDraft(body);
+        setPendingImage(localImage);
+        setAttachError('Could not upload that photo. Try again.');
+        return;
+      }
+      setUploadingImage(false);
+    }
+
+    send.mutate(
+      { body: body || undefined, imageKey },
+      { onSuccess: () => setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50) },
+    );
+  };
+
+  // The composer's own change handler — not a replacement for it — so typing
+  // keeps using the plain `Input` it always has. An empty box (the whole
+  // draft deleted) stops the signal immediately rather than waiting out the
+  // debounce.
+  const handleDraftChange = (text: string) => {
+    setDraft(text);
+    if (text.trim()) typing.notifyTyping();
+    else typing.stopTyping();
   };
 
   return (
@@ -192,9 +334,9 @@ export default function ChatScreen() {
         gap="sm"
         style={{
           paddingHorizontal: spacing.sm,
-          paddingRight: layout.gutter,
+          paddingRight: spacing.sm,
           paddingVertical: spacing.sm,
-          borderBottomWidth: 1,
+          borderBottomWidth: layout.hairline,
           borderBottomColor: colors.border,
           backgroundColor: colors.surface,
         }}
@@ -218,9 +360,9 @@ export default function ChatScreen() {
           style={{ flex: 1, minWidth: 0, borderRadius: radii.sm }}
         >
           <Row gap="sm" style={{ paddingVertical: 2 }}>
-            <Avatar name={name} size={32} uri={mediaSrc(person?.avatarUrl)} />
+            <Avatar name={name} size={36} uri={mediaSrc(person?.avatarUrl)} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text variant="bodyStrong" numberOfLines={1}>
+              <Text variant="h3" numberOfLines={1}>
                 {name}
               </Text>
               <Text variant="caption" tone="muted" numberOfLines={1}>
@@ -229,6 +371,21 @@ export default function ChatScreen() {
             </View>
           </Row>
         </Press>
+
+        <IconButton
+          variant="surface"
+          size={40}
+          style={{ borderRadius: radii.md }}
+          icon={<Ionicons name="ellipsis-horizontal" size={20} color={colors.textPrimary} />}
+          accessibilityLabel={`More options for ${name}`}
+          onPress={() =>
+            person
+              ? router.push(
+                  `/(app)/report?subjectType=user&subjectId=${person.id}&label=${encodeURIComponent(name)}`,
+                )
+              : undefined
+          }
+        />
       </Row>
 
       {offer.data ? (
@@ -253,88 +410,144 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.select({ ios: 90, default: 0 })}
       >
-        {messages.isPending ? (
-          <View style={{ paddingHorizontal: layout.gutter, paddingTop: spacing.lg }}>
-            <SkeletonList count={3} />
-          </View>
-        ) : messages.isError ? (
-          <ErrorState error={messages.error} onRetry={() => void messages.refetch()} />
-        ) : (
-          <FlatList
-            ref={listRef}
-            data={rendered}
-            keyExtractor={(r) => r.message.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              width: '100%',
-              maxWidth: layout.contentMaxWidth,
-              alignSelf: 'center',
-              paddingHorizontal: layout.gutter,
-              paddingVertical: spacing.lg,
-              flexGrow: 1,
-            }}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-            renderItem={({ item }) => (
-              <>
-                {item.daySeparator ? <DaySeparator label={item.daySeparator} /> : null}
-                <Bubble item={item} />
-              </>
-            )}
-            ListEmptyComponent={
-              <EmptyState
-                tone="accent"
-                icon={<Ionicons name="hand-left-outline" size={22} color={colors.accent} />}
-                title="Say hello"
-                body={`You and ${name} agreed a trade. Sort out where and when to swap.`}
-              />
-            }
-          />
-        )}
+        <View style={{ flex: 1, position: 'relative' }}>
+          {messages.isPending ? (
+            <View style={{ paddingHorizontal: layout.gutter, paddingTop: spacing.lg }}>
+              <SkeletonList count={3} />
+            </View>
+          ) : messages.isError ? (
+            <ErrorState error={messages.error} onRetry={() => void messages.refetch()} />
+          ) : (
+            <FlatList
+              ref={listRef}
+              data={rendered}
+              keyExtractor={(r) => r.message.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                width: '100%',
+                maxWidth: layout.contentMaxWidth,
+                alignSelf: 'center',
+                paddingHorizontal: layout.gutter,
+                paddingVertical: spacing.lg,
+                flexGrow: 1,
+              }}
+              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+              renderItem={({ item }) => (
+                <>
+                  {item.daySeparator ? <DaySeparator label={item.daySeparator} /> : null}
+                  <Bubble item={item} />
+                </>
+              )}
+              ListEmptyComponent={
+                <EmptyState
+                  tone="accent"
+                  icon={<Ionicons name="hand-left-outline" size={22} color={colors.accent} />}
+                  title="Say hello"
+                  body={`You and ${name} agreed a trade. Sort out where and when to swap.`}
+                />
+              }
+              ListFooterComponent={
+                typing.otherTyping ? (
+                  <TypingIndicator name={name} avatarUri={mediaSrc(person?.avatarUrl)} />
+                ) : null
+              }
+            />
+          )}
+        </View>
 
-        <Row
-          gap="sm"
-          align="flex-end"
+        <View
           style={{
-            paddingHorizontal: layout.gutter,
-            paddingVertical: spacing.md,
-            borderTopWidth: 1,
+            borderTopWidth: layout.hairline,
             borderTopColor: colors.border,
             backgroundColor: colors.surface,
           }}
         >
-          <View style={{ flex: 1 }}>
-            <Input
-              placeholder="Message…"
-              value={draft}
-              onChangeText={setDraft}
-              onSubmitEditing={handleSend}
-              returnKeyType="send"
-              multiline
-              // The default multiline field is a 104pt box, which is right for
-              // a description and far too tall for a composer. It grows from
-              // one line instead.
-              style={{ minHeight: 0, maxHeight: 120, paddingVertical: spacing.sm }}
+          {pendingImage ? (
+            <Row
+              gap="sm"
+              align="center"
+              style={{ paddingHorizontal: layout.gutter, paddingTop: spacing.md }}
+            >
+              <View style={{ position: 'relative' }}>
+                <Image
+                  source={{ uri: pendingImage }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: radii.md,
+                    borderWidth: layout.hairline,
+                    borderColor: colors.border,
+                  }}
+                  resizeMode="cover"
+                />
+                <Press
+                  scale="none"
+                  dim={false}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove photo"
+                  onPress={() => setPendingImage(null)}
+                  hitSlop={6}
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -6,
+                    width: 20,
+                    height: 20,
+                    borderRadius: radii.pill,
+                    backgroundColor: colors.textPrimary,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="close" size={13} color={colors.textInverse} />
+                </Press>
+              </View>
+              <Text variant="caption" tone="muted">
+                {uploadingImage ? 'Uploading…' : 'Photo attached'}
+              </Text>
+            </Row>
+          ) : null}
+
+          {attachError ? (
+            <Text
+              variant="caption"
+              tone="danger"
+              style={{ paddingHorizontal: layout.gutter, paddingTop: spacing.sm }}
+            >
+              {attachError}
+            </Text>
+          ) : null}
+
+          <Row
+            gap="sm"
+            align="flex-end"
+            style={{ paddingHorizontal: layout.gutter, paddingVertical: spacing.md }}
+          >
+            <IconButton
+              variant="plain"
+              size={40}
+              icon={<Ionicons name="attach" size={20} color={colors.textSecondary} />}
+              accessibilityLabel="Attach a photo"
+              disabled={uploadingImage}
+              onPress={() => void pickImage()}
             />
-          </View>
-          <IconButton
-            variant={canSend ? 'surface' : 'filled'}
-            icon={
-              <Ionicons
-                name="arrow-up"
-                size={18}
-                color={canSend ? colors.textInverse : colors.textFaint}
+            <View style={{ flex: 1 }}>
+              <Input
+                placeholder="Message…"
+                value={draft}
+                onChangeText={handleDraftChange}
+                onSubmitEditing={handleSend}
+                returnKeyType="send"
+                multiline
+                // The default multiline field is a 104pt box, which is right for
+                // a description and far too tall for a composer. It grows from
+                // one line instead.
+                style={{ minHeight: 0, maxHeight: 120, paddingVertical: spacing.sm }}
               />
-            }
-            accessibilityLabel="Send message"
-            disabled={!canSend}
-            onPress={handleSend}
-            // Filled terracotta only once there is something to send: a live-looking
-            // send button on an empty composer is a promise the app cannot keep.
-            style={
-              canSend ? { backgroundColor: colors.accent, borderColor: colors.accent } : undefined
-            }
-          />
-        </Row>
+            </View>
+            <SendButton active={canSend} disabled={!canSend} onPress={() => void handleSend()} />
+          </Row>
+        </View>
       </KeyboardAvoidingView>
     </Screen>
   );

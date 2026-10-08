@@ -14,6 +14,7 @@ import { type ItemType, type PublicationStatus, type TransactionType } from '../
 import { categories } from '../schema/categories';
 import { listingImages } from '../schema/listing-images';
 import { listings } from '../schema/listings';
+import { needImages } from '../schema/need-images';
 import { needs } from '../schema/needs';
 import { profiles } from '../schema/profiles';
 
@@ -74,6 +75,8 @@ export interface NeedWithRefs {
   updatedAt: number;
   owner: OwnerRef;
   category: CategoryRef;
+  /** Ordered reference photos; empty when the owner has not uploaded any. */
+  images: ImageRef[];
 }
 
 export interface DiscoverFilters {
@@ -143,7 +146,7 @@ type NeedFlat = {
   categorySlug: string;
 };
 
-function inflateNeed(r: NeedFlat): NeedWithRefs {
+function inflateNeed(r: NeedFlat, images: ImageRef[] = []): NeedWithRefs {
   return {
     id: r.id,
     ownerId: r.ownerId,
@@ -162,6 +165,7 @@ function inflateNeed(r: NeedFlat): NeedWithRefs {
       avatarKey: r.ownerAvatarKey,
     },
     category: { id: r.categoryId, name: r.categoryName, slug: r.categorySlug },
+    images,
   };
 }
 
@@ -241,6 +245,35 @@ export function marketRepository(db: Database) {
     return rows.map((r) => inflateListing(r, byListing.get(r.id) ?? []));
   }
 
+  /** Same as `imagesFor`, for a page of needs. */
+  async function needImagesForIds(needIds: string[]): Promise<Map<string, ImageRef[]>> {
+    const map = new Map<string, ImageRef[]>();
+    if (needIds.length === 0) return map;
+    const rows = await db
+      .select({
+        id: needImages.id,
+        needId: needImages.needId,
+        objectKey: needImages.objectKey,
+        sortOrder: needImages.sortOrder,
+      })
+      .from(needImages)
+      .where(inArray(needImages.needId, needIds))
+      .orderBy(asc(needImages.sortOrder), asc(needImages.id));
+    for (const r of rows) {
+      const ref: ImageRef = { id: r.id, objectKey: r.objectKey, sortOrder: r.sortOrder };
+      const list = map.get(r.needId);
+      if (list) list.push(ref);
+      else map.set(r.needId, [ref]);
+    }
+    return map;
+  }
+
+  /** Inflate need rows with their reference photos attached. */
+  async function withNeedImages(rows: NeedFlat[]): Promise<NeedWithRefs[]> {
+    const byNeed = await needImagesForIds(rows.map((r) => r.id));
+    return rows.map((r) => inflateNeed(r, byNeed.get(r.id) ?? []));
+  }
+
   return {
     async discoverListings(f: DiscoverFilters): Promise<ListingWithRefs[]> {
       const where = [eq(listings.status, 'published')];
@@ -308,7 +341,7 @@ export function marketRepository(db: Database) {
         .where(and(...where))
         .orderBy(desc(needs.createdAt), desc(needs.id))
         .limit(f.limit)) as NeedFlat[];
-      return rows.map(inflateNeed);
+      return withNeedImages(rows);
     },
 
     async listOwnerListings(ownerId: string): Promise<ListingWithRefs[]> {
@@ -330,7 +363,7 @@ export function marketRepository(db: Database) {
         .innerJoin(categories, eq(categories.id, needs.categoryId))
         .where(eq(needs.ownerId, ownerId))
         .orderBy(desc(needs.createdAt), desc(needs.id))) as NeedFlat[];
-      return rows.map(inflateNeed);
+      return withNeedImages(rows);
     },
 
     async getListing(id: string): Promise<ListingWithRefs | null> {
@@ -356,7 +389,9 @@ export function marketRepository(db: Database) {
         .where(eq(needs.id, id))
         .limit(1)) as NeedFlat[];
       const row = firstOrNull(rows);
-      return row ? inflateNeed(row) : null;
+      if (!row) return null;
+      const [withRefs] = await withNeedImages([row]);
+      return withRefs ?? null;
     },
 
     async listingsByIds(ids: string[]): Promise<Map<string, ListingWithRefs>> {
@@ -381,7 +416,7 @@ export function marketRepository(db: Database) {
         .innerJoin(profiles, eq(profiles.userId, needs.ownerId))
         .innerJoin(categories, eq(categories.id, needs.categoryId))
         .where(inArray(needs.id, ids))) as NeedFlat[];
-      for (const r of rows) map.set(r.id, inflateNeed(r));
+      for (const r of await withNeedImages(rows)) map.set(r.id, r);
       return map;
     },
 

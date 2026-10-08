@@ -9,37 +9,38 @@
 import { type AuthenticatedUser, type ItemImage } from '@pandam/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { type MarketKind } from '@/lib/api/market';
 import { mediaApi } from '@/lib/api/media';
 import { authKeys } from '@/lib/auth/hooks';
 import { qk } from '@/lib/query/keys';
 
-/** Upload several local photos to one listing, reporting how many landed. */
-export function useUploadListingImages() {
+/** Upload several local photos to one listing or need, reporting how many landed. */
+export function useUploadItemImages(kind: MarketKind) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async ({ listingId, uris }: { listingId: string; uris: string[] }) => {
+    mutationFn: async ({ itemId, uris }: { itemId: string; uris: string[] }) => {
       const uploaded: ItemImage[] = [];
       for (const uri of uris) {
-        const { image } = await mediaApi.uploadListingImage(listingId, uri);
+        const { image } = await mediaApi.uploadItemImage(kind, itemId, uri);
         uploaded.push(image);
       }
       return uploaded;
     },
-    onSuccess: (_images, { listingId }) => {
-      void client.invalidateQueries({ queryKey: qk.market.detail('listing', listingId) });
-      void client.invalidateQueries({ queryKey: qk.market.all('listing') });
+    onSuccess: (_images, { itemId }) => {
+      void client.invalidateQueries({ queryKey: qk.market.detail(kind, itemId) });
+      void client.invalidateQueries({ queryKey: qk.market.all(kind) });
     },
   });
 }
 
-export function useDeleteListingImage() {
+export function useDeleteItemImage(kind: MarketKind) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({ listingId, imageId }: { listingId: string; imageId: string }) =>
-      mediaApi.deleteListingImage(listingId, imageId),
-    onSuccess: (_res, { listingId }) => {
-      void client.invalidateQueries({ queryKey: qk.market.detail('listing', listingId) });
-      void client.invalidateQueries({ queryKey: qk.market.all('listing') });
+    mutationFn: ({ itemId, imageId }: { itemId: string; imageId: string }) =>
+      mediaApi.deleteItemImage(kind, itemId, imageId),
+    onSuccess: (_res, { itemId }) => {
+      void client.invalidateQueries({ queryKey: qk.market.detail(kind, itemId) });
+      void client.invalidateQueries({ queryKey: qk.market.all(kind) });
     },
   });
 }

@@ -9,6 +9,7 @@ export interface CreateMessageInput {
   conversationId: string;
   senderId: string;
   body: string;
+  imageKey?: string | null;
 }
 
 export function messagesRepository(db: Database) {

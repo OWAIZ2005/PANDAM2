@@ -5,11 +5,12 @@
  * different moments:
  *  - CREATE: there is no listing to attach a photo to yet, so picks are held
  *    locally and handed back on submit for the screen to upload afterwards.
- *  - EDIT: the listing exists, so a pick uploads immediately and a tap on the
+ *  - EDIT: the item exists, so a pick uploads immediately and a tap on the
  *    cross deletes it — no "save" step, which is what people expect from a
  *    photo grid.
  *
- * `listingId` is what selects between them.
+ * `itemId` is what selects between them. `kind` picks listing vs need
+ * storage — both can carry photos.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -20,25 +21,34 @@ import { type ItemImage } from '@pandam/types';
 import { Press, Row, Text, colors, radii, shadows, spacing } from '@pandam/ui';
 import { MAX_LISTING_IMAGES } from '@pandam/validation';
 
+import { type MarketKind } from '@/lib/api/market';
 import { SpringIn } from '@/components/brand/SpringIn';
 import { mediaSrc } from '@/lib/api/media';
-import { useDeleteListingImage, useUploadListingImages } from '@/lib/hooks/useMedia';
+import { useDeleteItemImage, useUploadItemImages } from '@/lib/hooks/useMedia';
 
 export interface PhotoPickerProps {
+  /** Listing vs need — selects which storage the photos attach to. */
+  kind: MarketKind;
   /** Photos already stored on the server (edit mode). */
   existing?: ItemImage[];
   /** Local picks not yet uploaded (create mode). */
   local: string[];
   onChangeLocal: (uris: string[]) => void;
-  /** Present in edit mode: picks upload straight away against this listing. */
-  listingId?: string;
+  /** Present in edit mode: picks upload straight away against this item. */
+  itemId?: string;
 }
 
-export function PhotoPicker({ existing = [], local, onChangeLocal, listingId }: PhotoPickerProps) {
-  const upload = useUploadListingImages();
-  const remove = useDeleteListingImage();
+export function PhotoPicker({
+  kind,
+  existing = [],
+  local,
+  onChangeLocal,
+  itemId,
+}: PhotoPickerProps) {
+  const upload = useUploadItemImages(kind);
+  const remove = useDeleteItemImage(kind);
 
-  const managed = !!listingId;
+  const managed = !!itemId;
   const total = existing.length + local.length;
   const remaining = MAX_LISTING_IMAGES - total;
   const busy = upload.isPending || remove.isPending;
@@ -58,7 +68,7 @@ export function PhotoPicker({ existing = [], local, onChangeLocal, listingId }: 
 
     if (managed) {
       upload.mutate(
-        { listingId, uris },
+        { itemId: itemId!, uris },
         {
           onError: () =>
             Alert.alert('Upload failed', 'Those photos could not be uploaded. Please try again.'),
@@ -96,7 +106,7 @@ export function PhotoPicker({ existing = [], local, onChangeLocal, listingId }: 
               <Pressable
                 accessibilityLabel="Remove photo"
                 disabled={busy}
-                onPress={() => remove.mutate({ listingId: listingId!, imageId: image.id })}
+                onPress={() => remove.mutate({ itemId: itemId!, imageId: image.id })}
                 style={{
                   position: 'absolute',
                   top: -6,

@@ -11,6 +11,7 @@ import { type ItemImage, type PublicProfile } from '@pandam/types';
 import { clientEnv } from '@/lib/env';
 
 import { api } from './client';
+import { type MarketKind } from './market';
 
 /** Absolute URL for an API-relative media path. Passes through absolute URLs. */
 export function mediaSrc(path: string | null | undefined): string | undefined {
@@ -46,13 +47,15 @@ async function imageForm(uri: string): Promise<FormData> {
   return form;
 }
 
-export const mediaApi = {
-  /** Attach one photo to a listing. Returns the stored image. */
-  uploadListingImage: async (listingId: string, uri: string) =>
-    api.upload<{ image: ItemImage }>(`/api/v1/listings/${listingId}/images`, await imageForm(uri)),
+const itemBase = (kind: MarketKind) => (kind === 'listing' ? '/api/v1/listings' : '/api/v1/needs');
 
-  deleteListingImage: (listingId: string, imageId: string) =>
-    api.delete<{ deleted: true }>(`/api/v1/listings/${listingId}/images/${imageId}`),
+export const mediaApi = {
+  /** Attach one photo to a listing or a need. Returns the stored image. */
+  uploadItemImage: async (kind: MarketKind, itemId: string, uri: string) =>
+    api.upload<{ image: ItemImage }>(`${itemBase(kind)}/${itemId}/images`, await imageForm(uri)),
+
+  deleteItemImage: (kind: MarketKind, itemId: string, imageId: string) =>
+    api.delete<{ deleted: true }>(`${itemBase(kind)}/${itemId}/images/${imageId}`),
 
   uploadAvatar: async (uri: string) =>
     api.upload<{ profile: PublicProfile }>('/api/v1/profiles/me/avatar', await imageForm(uri)),
@@ -62,6 +65,14 @@ export const mediaApi = {
 export async function uploadOfferImage(uri: string) {
   return api.upload<{ imageKey: string; imageUrl: string }>(
     '/api/v1/offers/attachments',
+    await imageForm(uri),
+  );
+}
+
+/** Upload the optional photo for a chat message; pass the returned key to `conversationsApi.sendMessage`. */
+export async function uploadMessageImage(conversationId: string, uri: string) {
+  return api.upload<{ imageKey: string; imageUrl: string }>(
+    `/api/v1/conversations/${conversationId}/attachments`,
     await imageForm(uri),
   );
 }

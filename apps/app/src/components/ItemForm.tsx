@@ -4,9 +4,9 @@
  * `@pandam/validation` primitives so the client and server never disagree.
  *
  * Photos are handled by `<PhotoPicker>`: on create they are collected locally
- * and returned in `onSubmit` for the screen to upload once the listing has an
- * id; on edit they upload and delete immediately against the existing listing.
- * Needs have no photos — a need is a request, not a thing.
+ * and returned in `onSubmit` for the screen to upload once the item has an
+ * id; on edit they upload and delete immediately against the existing item.
+ * Both a listing's own photos and a need's reference photos work the same way.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,7 +75,8 @@ export interface ItemFormSubmit {
   priceCurrency?: string;
   /**
    * Local photo URIs picked during CREATE, which the caller uploads once the
-   * listing exists. Empty in edit mode, where the picker uploads directly.
+   * item exists. Empty in edit mode, where the picker uploads directly.
+   * Available for both a listing's own photos and a need's reference photos.
    */
   photos?: string[];
 }
@@ -171,7 +172,7 @@ export function ItemForm({ kind, mode, initial, submitting, error, onSubmit }: I
   const categoryId = watch('categoryId');
   // Guided path progress (visual only): how far down the form the user is.
   const detailsDone = (title?.trim().length ?? 0) >= 3 && (description?.trim().length ?? 0) >= 10;
-  const guideDone = !categoryId ? 0 : isHave && photos.length === 0 ? 1 : !detailsDone ? 2 : 3;
+  const guideDone = !categoryId ? 0 : photos.length === 0 ? 1 : !detailsDone ? 2 : 3;
 
   const submit = handleSubmit((v) => {
     const isBarter = v.transactionType === 'barter';
@@ -181,13 +182,13 @@ export function ItemForm({ kind, mode, initial, submitting, error, onSubmit }: I
       title: v.title.trim(),
       description: v.description.trim(),
       status: v.publish ? 'published' : 'draft',
+      photos,
       ...(isHave
         ? {
             transactionType: v.transactionType,
             ...(isBarter
               ? {}
               : { priceAmount: Math.round(Number(v.priceRupees) * 100), priceCurrency: 'INR' }),
-            photos,
           }
         : {}),
     });
@@ -214,7 +215,7 @@ export function ItemForm({ kind, mode, initial, submitting, error, onSubmit }: I
             steps={
               isHave
                 ? ['Item', 'Photos', 'Details', 'Want', 'Publish']
-                : ['Need', 'Kind', 'Details', 'Trade', 'Publish']
+                : ['Need', 'Kind', 'Details', 'Photos', 'Publish']
             }
             done={guideDone}
           />
@@ -405,23 +406,26 @@ export function ItemForm({ kind, mode, initial, submitting, error, onSubmit }: I
         </View>
 
         {/* ---------------------------------------------------------- photos -- */}
-        {isHave ? (
-          <View>
-            <StepLabel
-              n={5}
-              label="Photos"
-              hint={
-                mode === 'edit' ? 'Saved as you add them.' : 'Optional, but they get traded faster.'
-              }
-            />
-            <PhotoPicker
-              existing={initial?.images ?? []}
-              local={photos}
-              onChangeLocal={setPhotos}
-              listingId={mode === 'edit' ? initial?.id : undefined}
-            />
-          </View>
-        ) : null}
+        <View>
+          <StepLabel
+            n={isHave ? 5 : 4}
+            label="Photos"
+            hint={
+              mode === 'edit'
+                ? 'Saved as you add them.'
+                : isHave
+                  ? 'Optional, but they get traded faster.'
+                  : 'Optional — a reference photo helps people recognise what you want.'
+            }
+          />
+          <PhotoPicker
+            kind={kind}
+            existing={initial?.images ?? []}
+            local={photos}
+            onChangeLocal={setPhotos}
+            itemId={mode === 'edit' ? initial?.id : undefined}
+          />
+        </View>
 
         {/* --------------------------------------------------------- publish -- */}
         <Card padded>

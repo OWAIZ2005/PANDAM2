@@ -227,78 +227,98 @@ export function createMarketRoute(kind: Kind) {
   });
 
   // ------------------------------------------------------------- photos --
-  // Listings only: a need is a request for something, so it has nothing of
-  // its own to photograph.
-  if (kind === 'listing') {
-    /**
-     * The item the caller is about to modify images on, or a thrown error.
-     * Ownership is re-checked on every image call — a photo write is a write
-     * to the listing.
-     */
-    const ownedListing = async (c: Context<AppEnv>) => {
-      const { user } = getAuth(c);
-      const { repos } = c.get('ctx');
-      const listingId = c.req.param('id');
-      const listing = listingId ? await repos.listings.findById(listingId) : null;
-      if (!listing) throw new ApiError('not_found', 'That listing does not exist.');
-      if (listing.ownerId !== user.id) {
-        throw new ApiError('forbidden', 'You can only change photos on your own listings.');
-      }
-      return listing;
-    };
+  // Both a listing ("I HAVE") and a need ("I NEED") can carry photos — a need
+  // with a reference image ("looking for a bike like this one") is just as
+  // real as a listing's own cover shot. The two kinds use separate tables
+  // (`listingImages` / `needImages`) and key prefixes, selected by `kind`.
+  /**
+   * The item the caller is about to modify images on, or a thrown error.
+   * Ownership is re-checked on every image call — a photo write is a write
+   * to the item.
+   */
+  const ownedItem = async (c: Context<AppEnv>) => {
+    const { user } = getAuth(c);
+    const { crud } = repo(c);
+    const id = c.req.param('id');
+    const item = id ? await crud.findById(id) : null;
+    if (!item) throw new ApiError('not_found', `That ${cfg.kind} does not exist.`);
+    if (item.ownerId !== user.id) {
+      throw new ApiError('forbidden', `You can only change photos on your own ${cfg.kind}s.`);
+    }
+    return item;
+  };
 
-    route.post('/:id/images', authMiddleware, requireAuth, async (c) => {
-      const listing = await ownedListing(c);
-      const { repos } = c.get('ctx');
-      const bucket = requireMedia(c.env);
+  route.post('/:id/images', authMiddleware, requireAuth, async (c) => {
+    const item = await ownedItem(c);
+    const { repos } = c.get('ctx');
+    const bucket = requireMedia(c.env);
 
-      const existing = await repos.listingImages.countForListing(listing.id);
-      if (existing >= MAX_IMAGES_PER_LISTING) {
-        throw new ApiError(
-          'unprocessable',
-          `A listing can have at most ${MAX_IMAGES_PER_LISTING} photos.`,
-        );
-      }
-
-      const { bytes, contentType, extension } = await readUploadedImage(c.req.raw);
-      // The key is built here, never taken from the client: `${listing}/${random}`
-      // keys a caller cannot guess, collide with, or point outside its prefix.
-      const objectKey = `listings/${listing.id}/${crypto.randomUUID()}.${extension}`;
-      await bucket.put(objectKey, bytes, { httpMetadata: { contentType } });
-
-      // R2 first, row second: a row that points at missing bytes would render
-      // as a broken image forever, whereas an orphaned object is invisible.
-      const image = await repos.listingImages.add({
-        listingId: listing.id,
-        objectKey,
-        sortOrder: await repos.listingImages.nextSortOrder(listing.id),
-      });
-
-      return sendOk(
-        c,
-        { image: { id: image.id, url: mediaUrl(image.objectKey), sortOrder: image.sortOrder } },
-        201,
+    const existing =
+      kind === 'listing'
+        ? await repos.listingImages.countForListing(item.id)
+        : await repos.needImages.countForNeed(item.id);
+    if (existing >= MAX_IMAGES_PER_LISTING) {
+      throw new ApiError(
+        'unprocessable',
+        `A ${cfg.kind} can have at most ${MAX_IMAGES_PER_LISTING} photos.`,
       );
-    });
+    }
 
-    route.delete('/:id/images/:imageId', authMiddleware, requireAuth, async (c) => {
-      const listing = await ownedListing(c);
-      const { repos } = c.get('ctx');
-      const imageId = c.req.param('imageId');
-      const image = imageId ? await repos.listingImages.findById(imageId) : null;
-      if (!image || image.listingId !== listing.id) {
-        throw new ApiError('not_found', 'That photo does not exist.');
-      }
+    const { bytes, contentType, extension } = await readUploadedImage(c.req.raw);
+    // The key is built here, never taken from the client: `${kind}/${id}/${random}`
+    // keys a caller cannot guess, collide with, or point outside its prefix.
+    const objectKey = `${cfg.kind}s/${item.id}/${crypto.randomUUID()}.${extension}`;
+    await bucket.put(objectKey, bytes, { httpMetadata: { contentType } });
 
-      // Row first this time, for the mirror-image reason: if the R2 delete
-      // fails the listing simply keeps an unreferenced object, rather than
-      // showing a photo the owner has already removed.
-      await repos.listingImages.remove(image.id);
-      if (c.env.MEDIA) await c.env.MEDIA.delete(image.objectKey);
+    // R2 first, row second: a row that points at missing bytes would render
+    // as a broken image forever, whereas an orphaned object is invisible.
+    const image =
+      kind === 'listing'
+        ? await repos.listingImages.add({
+            listingId: item.id,
+            objectKey,
+            sortOrder: await repos.listingImages.nextSortOrder(item.id),
+          })
+        : await repos.needImages.add({
+            needId: item.id,
+            objectKey,
+            sortOrder: await repos.needImages.nextSortOrder(item.id),
+          });
 
-      return sendOk(c, { deleted: true });
-    });
-  }
+    return sendOk(
+      c,
+      { image: { id: image.id, url: mediaUrl(image.objectKey), sortOrder: image.sortOrder } },
+      201,
+    );
+  });
+
+  route.delete('/:id/images/:imageId', authMiddleware, requireAuth, async (c) => {
+    const item = await ownedItem(c);
+    const { repos } = c.get('ctx');
+    const imageId = c.req.param('imageId');
+    const image =
+      imageId && kind === 'listing'
+        ? await repos.listingImages.findById(imageId)
+        : imageId
+          ? await repos.needImages.findById(imageId)
+          : null;
+    const belongsToItem =
+      image && kind === 'listing'
+        ? 'listingId' in image && image.listingId === item.id
+        : image && 'needId' in image && image.needId === item.id;
+    if (!image || !belongsToItem) {
+      throw new ApiError('not_found', 'That photo does not exist.');
+    }
+
+    // Row first this time, for the mirror-image reason: if the R2 delete
+    // fails the item simply keeps an unreferenced object, rather than
+    // showing a photo the owner has already removed.
+    if (kind === 'listing') await repos.listingImages.remove(image.id);
+    else await repos.needImages.remove(image.id);
+    if (c.env.MEDIA) await c.env.MEDIA.delete(image.objectKey);
+
+    return sendOk(c, { deleted: true });
+  });
 
   return route;
 }

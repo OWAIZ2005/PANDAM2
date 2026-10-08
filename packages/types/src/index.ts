@@ -259,7 +259,7 @@ export interface MarketItem {
   category: CategoryRef;
   /** Only present on listings — a need is never itself for sale. */
   pricing?: Pricing;
-  /** Ordered photos; only present on listings, and empty until one is added. */
+  /** Ordered photos — a listing's own, or a need's reference photos — empty until one is added. */
   images?: ItemImage[];
   /**
    * Unique-viewer count, only present on the single-item `GET /:id` response
@@ -291,9 +291,9 @@ export type NeedSummary = MarketItem & { kind: 'need' };
 export interface MatchSide {
   user: OwnerRef;
   /** What this side HAS that the other side NEEDS. */
-  have: { id: string; title: string; type: ItemType; category: CategoryRef };
+  have: ItemRef;
   /** What this side NEEDS that the other side HAS. */
-  need: { id: string; title: string; type: ItemType; category: CategoryRef };
+  need: ItemRef;
 }
 
 /** `GET /api/v1/matches` item — always oriented as you ↔ them. */
@@ -314,6 +314,10 @@ export interface ItemRef {
   title: string;
   type: ItemType;
   category: CategoryRef;
+  /** The item's own cover photo (first uploaded image), or `null` when it
+   *  has none — a need, or a listing with no photos. Always the real,
+   *  currently-stored image for this item; never a placeholder. */
+  imageUrl: string | null;
 }
 
 /** `GET /api/v1/offers/*` and `POST /api/v1/offers` item, hydrated for display. */
@@ -366,8 +370,16 @@ export interface MessageView {
   /** True if the caller sent this message. */
   isMine: boolean;
   body: string;
+  /** Attached photo, ready to fetch, or `null` for a text-only message. */
+  imageUrl: string | null;
   createdAt: number;
   editedAt: number | null;
+}
+
+/** `GET /api/v1/conversations/:id/typing` — whether any other participant is
+ *  currently (within the server's TTL window) typing. */
+export interface TypingStatusView {
+  typing: boolean;
 }
 
 /* -------------------------------------------------------------------------- */

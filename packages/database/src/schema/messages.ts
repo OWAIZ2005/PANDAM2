@@ -19,7 +19,10 @@ export const messages = sqliteTable(
     senderId: text('sender_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    /** Caption text — empty when the message is an image with no caption. */
     body: text('body').notNull(),
+    /** R2 object key for an attached photo, or `null` for a text-only message. */
+    imageKey: text('image_key'),
     createdAt,
     editedAt: nullableTimestamp('edited_at'),
     deletedAt: nullableTimestamp('deleted_at'),

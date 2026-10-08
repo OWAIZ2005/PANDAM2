@@ -5,13 +5,13 @@ import { Screen, layout, spacing } from '@pandam/ui';
 
 import { AppHeader } from '@/components/AppHeader';
 import { ItemForm } from '@/components/ItemForm';
-import { useUploadListingImages } from '@/lib/hooks/useMedia';
+import { useUploadItemImages } from '@/lib/hooks/useMedia';
 import { useCreateItem } from '@/lib/hooks/useMarket';
 
 export default function NewListingScreen() {
   const router = useRouter();
   const create = useCreateItem('listing');
-  const uploadImages = useUploadListingImages();
+  const uploadImages = useUploadItemImages('listing');
 
   return (
     <Screen padded={false} edges={['top', 'bottom']}>
@@ -37,7 +37,7 @@ export default function NewListingScreen() {
               // detail screen is where the owner can retry adding photos.
               if (photos?.length) {
                 await uploadImages
-                  .mutateAsync({ listingId: res.item.id, uris: photos })
+                  .mutateAsync({ itemId: res.item.id, uris: photos })
                   .catch(() => undefined);
               }
               router.replace(`/(app)/listing/${res.item.id}`);

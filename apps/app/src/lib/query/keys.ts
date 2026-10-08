@@ -24,6 +24,7 @@ export const qk = {
     all: ['conversations'] as const,
     detail: (id: string) => ['conversations', 'detail', id] as const,
     messages: (id: string) => ['conversations', id, 'messages'] as const,
+    typing: (id: string) => ['conversations', id, 'typing'] as const,
   },
   transactions: {
     all: ['transactions'] as const,

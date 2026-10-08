@@ -20,6 +20,7 @@ export const ID_PREFIXES = {
   listing: 'lst',
   listingImage: 'img',
   need: 'ned',
+  needImage: 'nim',
   match: 'mch',
   offer: 'ofr',
   conversation: 'cnv',

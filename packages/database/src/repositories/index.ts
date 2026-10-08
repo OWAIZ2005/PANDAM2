@@ -20,6 +20,7 @@ import { listingsRepository } from './listings';
 import { marketRepository } from './market';
 import { matchesRepository } from './matches';
 import { messagesRepository } from './messages';
+import { needImagesRepository } from './need-images';
 import { needsRepository } from './needs';
 import { notificationsRepository } from './notifications';
 import { oauthIdentitiesRepository } from './oauth-identities';
@@ -43,6 +44,7 @@ export function createRepositories(db: Database) {
     listings: listingsRepository(db),
     listingImages: listingImagesRepository(db),
     needs: needsRepository(db),
+    needImages: needImagesRepository(db),
     market: marketRepository(db),
     matches: matchesRepository(db),
     offers: offersRepository(db),

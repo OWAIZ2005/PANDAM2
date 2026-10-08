@@ -14,7 +14,7 @@ import {
   type ReciprocalMatch,
 } from '../../../domain/matching';
 import { sendOk } from '../../../lib/http';
-import { toOwner } from '../../../lib/serialize';
+import { coverImageUrl, toOwner } from '../../../lib/serialize';
 import { authMiddleware, getAuth, requireAuth } from '../../../middleware/auth';
 import { type AppEnv } from '../../../types';
 
@@ -84,8 +84,15 @@ function buildView(
       title: aListing.title,
       type: aListing.type,
       category: aListing.category,
+      imageUrl: coverImageUrl(aListing),
     },
-    need: { id: aNeed.id, title: aNeed.title, type: aNeed.type, category: aNeed.category },
+    need: {
+      id: aNeed.id,
+      title: aNeed.title,
+      type: aNeed.type,
+      category: aNeed.category,
+      imageUrl: coverImageUrl(aNeed),
+    },
   };
   const sideB: MatchSide = {
     user: toOwner(bListing.owner),
@@ -94,8 +101,15 @@ function buildView(
       title: bListing.title,
       type: bListing.type,
       category: bListing.category,
+      imageUrl: coverImageUrl(bListing),
     },
-    need: { id: bNeed.id, title: bNeed.title, type: bNeed.type, category: bNeed.category },
+    need: {
+      id: bNeed.id,
+      title: bNeed.title,
+      type: bNeed.type,
+      category: bNeed.category,
+      imageUrl: coverImageUrl(bNeed),
+    },
   };
 
   const youIsA = m.userAId === meId;

@@ -15,7 +15,7 @@ import { type Context, Hono } from 'hono';
 
 import { barterTransition, type BarterAction } from '../../../domain/barter';
 import { ApiError, sendOk } from '../../../lib/http';
-import { toOwnerRef } from '../../../lib/serialize';
+import { coverImageUrl, toOwnerRef } from '../../../lib/serialize';
 import { parseBody } from '../../../lib/validate';
 import { authMiddleware, getAuth, requireAuth } from '../../../middleware/auth';
 import { notify } from '../../../services/notify';
@@ -111,6 +111,7 @@ async function hydrate(
     title: 'Listing removed',
     type: 'product',
     category: { id: '', name: 'Unknown', slug: 'unknown' },
+    imageUrl: null,
   };
   let youGave = emptyItem;
   let youGot = emptyItem;
@@ -131,10 +132,17 @@ async function hydrate(
         title: string;
         type: ItemRef['type'];
         category: ItemRef['category'];
+        images?: { objectKey: string; sortOrder: number }[];
       } | null,
     ): ItemRef =>
       item
-        ? { id: item.id, title: item.title, type: item.type, category: item.category }
+        ? {
+            id: item.id,
+            title: item.title,
+            type: item.type,
+            category: item.category,
+            imageUrl: coverImageUrl(item),
+          }
         : emptyItem;
     // `offeredListingId` belongs to `fromUserId`; oriented to "me" below.
     const iAmSender = offer.fromUserId === meId;

@@ -57,6 +57,22 @@ export function toMediaUrl(objectKey: string | null): string | null {
   return objectKey ? mediaUrl(objectKey) : null;
 }
 
+/**
+ * An item's cover photo — its first uploaded image, in `sortOrder` — resolved
+ * to a fetchable URL, or `null` when it has none. The one place that decides
+ * "which image represents this item" so every `ItemRef` (offers, matches,
+ * transactions) agrees with the listing's own detail page instead of each
+ * screen picking its own convention.
+ */
+export function coverImageUrl(item: unknown): string | null {
+  const images =
+    item && typeof item === 'object' && 'images' in item
+      ? (item as { images?: { objectKey: string; sortOrder: number }[] }).images
+      : undefined;
+  const first = images ? [...images].sort((a, b) => a.sortOrder - b.sortOrder)[0] : undefined;
+  return first ? mediaUrl(first.objectKey) : null;
+}
+
 export function toPublicProfile(profile: Profile | null): PublicProfile | null {
   if (!profile) return null;
   return {

@@ -30,6 +30,7 @@ import {
   verifyWebhookSignature,
   type RazorpayWebhookPayload,
 } from '../../../lib/razorpay';
+import { coverImageUrl } from '../../../lib/serialize';
 import { parseBody } from '../../../lib/validate';
 import { authMiddleware, getAuth, requireAuth } from '../../../middleware/auth';
 import { notify } from '../../../services/notify';
@@ -209,8 +210,20 @@ async function hydrate(c: Context<AppEnv>, payment: Payment) {
     id: payment.id,
     status: payment.status,
     listing: listing
-      ? { id: listing.id, title: listing.title, type: listing.type, category: listing.category }
-      : { id: payment.listingId, title: 'Listing removed', type: 'product', category: null },
+      ? {
+          id: listing.id,
+          title: listing.title,
+          type: listing.type,
+          category: listing.category,
+          imageUrl: coverImageUrl(listing),
+        }
+      : {
+          id: payment.listingId,
+          title: 'Listing removed',
+          type: 'product' as const,
+          category: { id: '', name: 'Unknown', slug: 'unknown' },
+          imageUrl: null,
+        },
     buyer: {
       id: payment.buyerId,
       displayName: buyer?.displayName ?? 'PANDAM user',

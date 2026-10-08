@@ -21,7 +21,7 @@ import { type Context, Hono } from 'hono';
 import { offerTransition } from '../../../domain/offers';
 import { ApiError, sendOk } from '../../../lib/http';
 import { mediaUrl, readUploadedImage, requireMedia } from '../../../lib/media';
-import { toOwnerRef } from '../../../lib/serialize';
+import { coverImageUrl, toOwnerRef } from '../../../lib/serialize';
 import { parseBody } from '../../../lib/validate';
 import { authMiddleware, getAuth, requireAuth } from '../../../middleware/auth';
 import { notify } from '../../../services/notify';
@@ -270,12 +270,14 @@ async function hydrate(
       title: string;
       type: string;
       category: { id: string; name: string; slug: string };
+      images?: { objectKey: string; sortOrder: number }[];
     } | null,
   ): ItemRef => ({
     id,
     title: item?.title ?? 'No longer available',
     type: (item?.type ?? 'product') as ItemRef['type'],
     category: item?.category ?? { id: '', name: 'Unknown', slug: 'unknown' },
+    imageUrl: coverImageUrl(item),
   });
 
   return {
