@@ -477,7 +477,7 @@ export const layout = {
    * (see apps/app/src/components/nav/PandamTabBar.tsx), so the last item
    * needs this much room to scroll clear of it.
    */
-  tabBarInset: 104,
+  tabBarInset: 128,
   /** Hairline structural border — the default border width everywhere. */
   hairline: 1,
   /** Heavier structural border, for the elements that should anchor a screen. */

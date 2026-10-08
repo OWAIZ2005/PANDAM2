@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { type Tabs } from 'expo-router';
-import { type ComponentProps, useEffect, useState } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 import { Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import Animated, {
+  Easing,
   interpolate,
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,25 +22,40 @@ import { useMatches } from '@/lib/hooks/useMatches';
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 type IconName = keyof typeof Ionicons.glyphMap;
 
-/** Content height of the bar; the safe-area inset is added as padding. */
-export const TAB_BAR_HEIGHT = 56;
+/** Content height of the panel, before the safe-area inset is added below it. */
+export const TAB_BAR_HEIGHT = 78;
 const CREATE = 'create';
+/** How far the centre square rises above the panel's top edge. */
+const CREATE_LIFT = 30;
+/** The centre square's own size. */
+const CREATE_SIZE = 62;
 
 const ICONS: Record<string, IconName> = {
-  index: 'home',
-  discover: 'compass',
-  matches: 'sparkles',
-  profile: 'person',
+  index: 'home-outline',
+  discover: 'compass-outline',
+  matches: 'sparkles-outline',
+  profile: 'person-outline',
 };
-/** Numbered editorial labels — "a physical control panel", not icon-only chrome. */
-const LABELS: Record<string, string> = {
-  index: '01 HOME',
-  discover: '02 DISCOVER',
-  matches: '03 MATCHES',
-  profile: '04 PROFILE',
+const LABEL: Record<string, string> = {
+  index: 'HOME',
+  discover: 'DISCOVER',
+  matches: 'MATCHES',
+  profile: 'PROFILE',
 };
 
-const SPRING = { damping: 17, stiffness: 210, mass: 0.8 };
+/**
+ * Each tab's own micro-motion on becoming active — the same pulse shape
+ * (scale 1 → 1.10 → 1 over ~280ms) with a tiny per-tab personality so the
+ * four don't feel mechanically identical: Home lifts, Discover and Matches
+ * get a few degrees of rotation in opposite directions ("sparkle" reads as a
+ * quick twist, not a spin), Profile just settles.
+ */
+const ICON_ROTATE: Record<string, number> = { index: 0, discover: 5, matches: -6, profile: 0 };
+const ICON_LIFT: Record<string, number> = { index: -2, discover: 0, matches: 0, profile: 0 };
+
+const EASE_OUT = Easing.out(Easing.cubic);
+const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
+const AnimatedText = Animated.createAnimatedComponent(Text);
 
 function tap() {
   if (Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => undefined);
@@ -47,7 +63,8 @@ function tap() {
 
 /* -------------------------------------------------------------------------- */
 
-/** A navigation tab: icon + numbered label, on a sliding orange block when active. */
+/** A navigation tab: outline icon + "01 LABEL", tinted orange when active —
+ *  no block, no pill, no card behind it. */
 function TabItem({
   name,
   focused,
@@ -62,157 +79,176 @@ function TabItem({
   onLongPress: () => void;
 }) {
   const motionOK = useMotionOK();
+  // Immediate tactile press feedback — independent of the focus animation
+  // below, so it fires on every touch even when the tab is already active.
+  const press = useSharedValue(1);
+  // Persistent 0/1 focus state: drives the smooth orange cross-fade and the
+  // label's settle-in, over the tab's full "is this the active one" life —
+  // not just the moment it's tapped.
   const on = useSharedValue(focused ? 1 : 0);
-  const pop = useSharedValue(1);
+  // One-shot 0→1 impulse: the icon's little scale/rotate/lift pulse that
+  // plays once, right when the tab becomes active.
+  const pulse = useSharedValue(0);
 
   useEffect(() => {
-    on.set(motionOK ? withSpring(focused ? 1 : 0, SPRING) : focused ? 1 : 0);
-  }, [focused, motionOK, on]);
-
-  const icon = useAnimatedStyle(() => ({
-    transform: [{ scale: pop.value }],
-  }));
-  const label = useAnimatedStyle(() => ({
-    opacity: interpolate(on.value, [0, 1], [0.7, 1]),
-  }));
-
-  const press = () => {
-    if (motionOK) {
-      pop.set(
-        withSequence(
-          withTiming(0.82, { duration: 70 }),
-          withSpring(1, { damping: 8, stiffness: 320 }),
-        ),
-      );
+    on.set(
+      motionOK ? withTiming(focused ? 1 : 0, { duration: 280, easing: EASE_OUT }) : focused ? 1 : 0,
+    );
+    if (focused) {
+      pulse.set(0);
+      pulse.set(motionOK ? withTiming(1, { duration: 280, easing: EASE_OUT }) : 1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focused, motionOK]);
+
+  const iconStyle = useAnimatedStyle(() => {
+    const bump = interpolate(pulse.value, [0, 0.5, 1], [1, 1.1, 1]);
+    const rotate = interpolate(pulse.value, [0, 0.5, 1], [0, ICON_ROTATE[name] ?? 0, 0]);
+    const lift = interpolate(pulse.value, [0, 0.5, 1], [0, ICON_LIFT[name] ?? 0, 0]);
+    return {
+      transform: [{ scale: bump * press.value }, { rotate: `${rotate}deg` }, { translateY: lift }],
+      color: interpolateColor(on.value, [0, 1], [colors.textPrimary, colors.accent]),
+    };
+  });
+
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(on.value, [0, 1], [0.6, 1]),
+    transform: [
+      { translateY: interpolate(on.value, [0, 1], [2, 0]) },
+      { scale: interpolate(on.value, [0, 1], [0.97, 1]) },
+    ],
+    color: interpolateColor(on.value, [0, 1], [colors.textPrimary, colors.accent]),
+  }));
+
+  const onPressIn = () => {
+    if (motionOK) press.set(withTiming(0.96, { duration: 110, easing: EASE_OUT }));
+  };
+  const onPressOut = () => {
+    if (motionOK) press.set(withTiming(1, { duration: 130, easing: EASE_OUT }));
+  };
+  const handlePress = () => {
     tap();
     onPress();
   };
-
-  const fg = focused ? palette.white : colors.textPrimary;
 
   return (
     <Pressable
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
-      accessibilityLabel={LABELS[name]}
-      onPress={press}
+      accessibilityLabel={LABEL[name]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={handlePress}
       onLongPress={onLongPress}
       style={{
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         height: TAB_BAR_HEIGHT,
-        gap: 2,
-        // thin Swiss rules between the cells of the nav grid
-        borderLeftWidth: name === 'index' ? 0 : 1,
-        borderRightWidth: name === 'discover' ? 1 : 0,
-        borderColor: '#D9D9D9',
+        gap: 5,
       }}
     >
-      <Animated.View style={icon}>
-        <Ionicons
-          name={focused ? ICONS[name]! : (`${ICONS[name]}-outline` as IconName)}
-          size={19}
-          color={fg}
-        />
+      <View>
+        <AnimatedIonicons name={ICONS[name]!} size={22} style={iconStyle} />
         {badge ? (
           <CountBadge
             value={badge}
             color={colors.match}
-            ringColor={focused ? colors.accent : colors.background}
-            style={{ position: 'absolute', top: -6, left: 11 }}
+            ringColor={colors.background}
+            style={{ position: 'absolute', top: -6, left: 14 }}
           />
         ) : null}
-      </Animated.View>
-      <Animated.View style={label}>
-        <Text
-          style={{
-            fontSize: 8.5,
+      </View>
+      <AnimatedText
+        style={[
+          {
+            fontSize: 10.5,
             fontFamily: 'InterTight_700Bold',
-            letterSpacing: 0.4,
-            color: fg,
-          }}
-        >
-          {LABELS[name]}
-        </Text>
-      </Animated.View>
+            letterSpacing: 0.3,
+          },
+          labelStyle,
+        ]}
+      >
+        {LABEL[name]}
+      </AnimatedText>
     </Pressable>
   );
 }
 
-/** The raised centre action: a black-bordered orange square that overlaps the bar. */
-function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => void }) {
+/** The signature centre action: an orange rounded square that physically
+ *  breaks through the panel's top edge — not a circular FAB, not inside a
+ *  tab column. */
+function CreateButton({ onPress }: { onPress: () => void }) {
   const motionOK = useMotionOK();
-  const on = useSharedValue(focused ? 1 : 0);
-  const press = useSharedValue(1);
-
-  useEffect(() => {
-    on.set(
-      motionOK ? withSpring(focused ? 1 : 0, { damping: 12, stiffness: 180 }) : focused ? 1 : 0,
-    );
-  }, [focused, motionOK, on]);
+  const scale = useSharedValue(1);
+  const rotate = useSharedValue(0);
 
   const square = useAnimatedStyle(() => ({
-    transform: [{ scale: press.value }, { rotate: `${on.value * 45}deg` }],
+    transform: [{ scale: scale.value }, { rotate: `${rotate.value}deg` }],
   }));
 
   return (
-    <View style={{ width: 68, alignItems: 'center' }}>
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        top: -CREATE_LIFT,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+      }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Add something"
-        accessibilityState={{ selected: focused }}
-        onPressIn={() => {
-          if (motionOK) press.set(withSpring(0.88, { damping: 15, stiffness: 400 }));
-        }}
-        onPressOut={() => {
-          if (motionOK) press.set(withSpring(1, { damping: 7, stiffness: 300 }));
-        }}
         onPress={() => {
+          if (motionOK) {
+            // 1 → 0.92 → 1.04 → 1: a quick, weighty tap-down then a tiny
+            // overshoot settle — not a bounce, one controlled correction.
+            scale.set(
+              withSequence(
+                withTiming(0.92, { duration: 90, easing: EASE_OUT }),
+                withTiming(1.04, { duration: 120, easing: EASE_OUT }),
+                withTiming(1, { duration: 110, easing: EASE_OUT }),
+              ),
+            );
+            rotate.set(
+              withSequence(
+                withTiming(-4, { duration: 90, easing: EASE_OUT }),
+                withTiming(3, { duration: 120, easing: EASE_OUT }),
+                withTiming(0, { duration: 110, easing: EASE_OUT }),
+              ),
+            );
+          }
           if (Platform.OS !== 'web') {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
           }
           onPress();
         }}
         hitSlop={8}
-        style={{ marginTop: -22 }}
       >
-        {/* The off-white ring makes the square look cut into — and raised
-            above — the bar, like a punch card. */}
-        <View
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 14,
-            backgroundColor: colors.background,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+        <Animated.View
+          style={[
+            {
+              width: CREATE_SIZE,
+              height: CREATE_SIZE,
+              borderRadius: 18,
+              backgroundColor: colors.accent,
+              borderWidth: 2,
+              borderColor: colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: colors.border,
+              shadowOpacity: 0.22,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 10,
+            },
+            square,
+          ]}
         >
-          <Animated.View
-            style={[
-              {
-                width: 52,
-                height: 52,
-                borderRadius: 10,
-                backgroundColor: colors.accent,
-                borderWidth: 1.5,
-                borderColor: colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: colors.border,
-                shadowOpacity: 0.3,
-                shadowRadius: 0,
-                shadowOffset: { width: 2, height: 3 },
-                elevation: 8,
-              },
-              square,
-            ]}
-          >
-            <Ionicons name="add" size={28} color={palette.white} />
-          </Animated.View>
-        </View>
+          <Ionicons name="add" size={30} color={palette.white} />
+        </Animated.View>
       </Pressable>
     </View>
   );
@@ -221,50 +257,23 @@ function CreateButton({ focused, onPress }: { focused: boolean; onPress: () => v
 /* -------------------------------------------------------------------------- */
 
 /**
- * PANDAM's navigation: a flat off-white editorial control panel, flush with
- * the bottom edge, with a 2px black top border, a sliding sharp-cornered
- * orange block behind the active tab, a raised black-bordered "+" square cut
- * into the middle, a live match badge, and a haptic tick on every change.
- * Navigation behaviour is React Navigation's own (`tabPress` event,
- * `navigate`), so routes and deep links are unchanged.
+ * PANDAM's navigation: a large off-white organic sheet overlaying the page
+ * (not pushing content up), strongly rounded top corners, a thin black
+ * structural top border, four numbered tabs with a refined orange tint on
+ * the active one (no block, no pill), and a black-bordered orange square
+ * breaking through the top edge as the centre "add" action. Navigation
+ * behaviour is React Navigation's own (`tabPress` event, `navigate`), so
+ * routes and deep links are unchanged — only the visual shell is rebuilt.
  */
 export function PandamTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
-  const motionOK = useMotionOK();
   const matches = demoQuery(useMatches(), demoMatches);
   const matchCount = matches.data?.length ?? 0;
 
-  const [rowW, setRowW] = useState(0);
   const routes = state.routes;
   const focusedName = routes[state.index]?.name;
-
-  // Slot geometry: four equal tabs around a fixed-width centre slot.
-  const createW = 68;
-  const slotW = rowW > 0 ? (rowW - createW) / 4 : 0;
-  const slotX = (name: string) => {
-    const order = routes.map((r) => r.name).filter((n) => n !== CREATE);
-    const i = order.indexOf(name);
-    return i < 2 ? i * slotW : createW + i * slotW;
-  };
-
-  const pillX = useSharedValue(0);
-  const pillOn = useSharedValue(0);
-  useEffect(() => {
-    if (!slotW || !focusedName) return;
-    const onTab = focusedName !== CREATE;
-    if (onTab) {
-      const x = slotX(focusedName) + 4;
-      pillX.set(motionOK && pillOn.value > 0 ? withSpring(x, SPRING) : x);
-    }
-    pillOn.set(motionOK ? withTiming(onTab ? 1 : 0, { duration: 160 }) : onTab ? 1 : 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedName, slotW, motionOK]);
-
-  const pill = useAnimatedStyle(() => ({
-    opacity: pillOn.value,
-    transform: [{ translateX: pillX.value }],
-  }));
+  const createW = 72;
 
   const go = (routeName: string, key: string, focused: boolean) => {
     const event = navigation.emit({ type: 'tabPress', target: key, canPreventDefault: true });
@@ -272,6 +281,9 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
   };
 
   const maxW = Math.min(screenW, 720);
+  const side = routes.filter((r) => r.name !== CREATE);
+  const left = side.slice(0, 2);
+  const right = side.slice(2);
 
   return (
     <View
@@ -281,67 +293,48 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
       <View
         style={{
           width: maxW,
+          // The panel is an overlay, not a layout element the page scrolls
+          // above — content keeps running underneath it, exactly like a
+          // bottom sheet attached to the device edge.
           paddingBottom: insets.bottom,
           backgroundColor: colors.background,
-          borderTopWidth: 2,
-          borderTopColor: colors.border,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          borderTopWidth: 1,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderColor: colors.border,
+          overflow: 'visible',
+          shadowColor: colors.border,
+          shadowOpacity: 0.08,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: -4 },
+          elevation: 6,
         }}
       >
-        <View
-          onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
-          style={{ height: TAB_BAR_HEIGHT, flexDirection: 'row' }}
-        >
-          {/* Hairline dividers between every cell — a structured grid strip,
-              not a borderless row of icons. */}
-          {slotW > 0
-            ? [slotW, slotW * 2, slotW * 2 + createW, slotW * 3 + createW].map((x) => (
-                <View
-                  key={x}
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    left: x,
-                    top: 0,
-                    bottom: 0,
-                    width: 1,
-                    backgroundColor: colors.border,
-                  }}
-                />
-              ))
-            : null}
-
-          {/* sliding active block */}
-          {slotW > 0 ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                {
-                  position: 'absolute',
-                  left: 0,
-                  top: 6,
-                  width: slotW - 8,
-                  height: TAB_BAR_HEIGHT - 12,
-                  borderRadius: 6,
-                  borderWidth: 1.5,
-                  borderColor: colors.border,
-                  backgroundColor: colors.accent,
-                },
-                pill,
-              ]}
-            />
-          ) : null}
-
-          {routes.map((route) => {
+        <View style={{ height: TAB_BAR_HEIGHT, flexDirection: 'row' }}>
+          {left.map((route) => {
             const focused = route.name === focusedName;
-            if (route.name === CREATE) {
-              return (
-                <CreateButton
-                  key={route.key}
-                  focused={focused}
-                  onPress={() => go(route.name, route.key, focused)}
-                />
-              );
-            }
+            if (!ICONS[route.name]) return null;
+            return (
+              <TabItem
+                key={route.key}
+                name={route.name}
+                focused={focused}
+                badge={route.name === 'matches' ? matchCount : undefined}
+                onPress={() => go(route.name, route.key, focused)}
+                onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+              />
+            );
+          })}
+
+          {/* Reserves the centre slot the floating button sits over — the
+              button itself is absolutely positioned above the panel, never
+              inside this row, so it can break through the top edge. */}
+          <View style={{ width: createW }} />
+
+          {right.map((route) => {
+            const focused = route.name === focusedName;
             if (!ICONS[route.name]) return null;
             return (
               <TabItem
@@ -355,6 +348,15 @@ export function PandamTabBar({ state, navigation }: TabBarProps) {
             );
           })}
         </View>
+
+        {routes
+          .filter((r) => r.name === CREATE)
+          .map((route) => {
+            const focused = route.name === focusedName;
+            return (
+              <CreateButton key={route.key} onPress={() => go(route.name, route.key, focused)} />
+            );
+          })}
       </View>
     </View>
   );
