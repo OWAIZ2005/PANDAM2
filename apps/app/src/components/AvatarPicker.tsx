@@ -4,10 +4,11 @@ import { ActivityIndicator, Alert, Platform, Pressable, View } from 'react-nativ
 
 import { Avatar, colors, palette } from '@pandam/ui';
 
+// No `allowsEditing` here: the native crop step is known to silently fail to
+// return a result in Expo Go (it needs a real dev/production build) — see
+// apps/app/app/(app)/offer/new.tsx's pickPhoto for the same fix.
 const PICK_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
-  allowsEditing: true,
-  aspect: [1, 1],
   quality: 0.85,
 };
 

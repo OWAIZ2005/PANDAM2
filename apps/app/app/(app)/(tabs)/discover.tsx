@@ -21,6 +21,7 @@ import {
 } from '@pandam/ui';
 
 import { AddCategorySheet } from '@/components/AddCategorySheet';
+import { PandamBackground } from '@/components/brand/PandamBackground';
 import { CategoryRail } from '@/components/CategoryFilter';
 import { ItemCard } from '@/components/ItemCard';
 import { ErrorState } from '@/components/states';
@@ -104,8 +105,10 @@ export default function DiscoverScreen() {
       style={{
         borderBottomWidth: 1,
         borderBottomColor: colors.borderSoft,
+        overflow: 'hidden',
       }}
     >
+      <PandamBackground variant="discover" />
       <View
         style={{
           width: '100%',

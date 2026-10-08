@@ -9,6 +9,7 @@ import {
   Card,
   Divider,
   EmptyState,
+  IconButton,
   IconFrame,
   ListRow,
   Rail,
@@ -30,6 +31,7 @@ import { IS_DEMO_DATA, demoMergeList, demoMyListings, demoMyNeeds } from '@/dumm
 import { useTransactions } from '@/lib/hooks/useTransactions';
 import { AppHeader } from '@/components/AppHeader';
 import { AvatarPicker } from '@/components/AvatarPicker';
+import { PandamBackground } from '@/components/brand/PandamBackground';
 import { ItemCard } from '@/components/ItemCard';
 import { ErrorState } from '@/components/states';
 import { type MarketKind } from '@/lib/api/market';
@@ -166,13 +168,41 @@ export default function ProfileScreen() {
 
   return (
     <Screen scroll padded={false} tabBarInset>
+      <View style={{ overflow: 'hidden' }}>
+        <PandamBackground variant="profile" />
+        <View
+          style={{
+            width: '100%',
+            maxWidth: layout.contentMaxWidth,
+            alignSelf: 'center',
+            paddingHorizontal: layout.gutter,
+            paddingTop: spacing.lg,
+          }}
+        >
+          <AppHeader
+            eyebrow="04"
+            title="Profile"
+            subtitle="Your items, interests and activity."
+            right={
+              <IconButton
+                variant="plain"
+                size={40}
+                icon={<Ionicons name="settings-outline" size={19} color={colors.textPrimary} />}
+                accessibilityLabel="Account settings"
+                onPress={() => router.push('/(app)/account')}
+                style={{ backgroundColor: colors.surface, ...shadows.xs }}
+              />
+            }
+          />
+        </View>
+      </View>
       <View
         style={{
           width: '100%',
           maxWidth: layout.contentMaxWidth,
           alignSelf: 'center',
           paddingHorizontal: layout.gutter,
-          paddingTop: spacing.lg,
+          paddingTop: spacing.sm,
         }}
       >
         {/* ---------------------------------------------------------- you -- */}

@@ -6,15 +6,57 @@
  * the registration hook (which reads the session) the two modules would import
  * each other. Nothing in here knows about auth state.
  */
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { notificationsApi } from '@/lib/api/notifications';
 
 /** The token this installation last registered with the API. */
 let currentToken: string | null = null;
+
+type NotificationsModule = typeof import('expo-notifications');
+
+// `undefined` = not yet attempted; `null` = attempted and unavailable.
+let loaded: NotificationsModule | null | undefined;
+
+/**
+ * True inside Expo Go specifically (as opposed to a real dev/production
+ * build). On Android, `expo-notifications`'s own module-init code reports its
+ * "removed from Expo Go" failure through React Native's global error handler
+ * rather than a plain synchronous throw — it is NOT catchable by a JS
+ * `try/catch` around `require()`, which is why wrapping the require alone
+ * still crashed the app. The only reliable fix is to never call `require()`
+ * on this module at all while running inside Expo Go.
+ */
+function isExpoGo(): boolean {
+  return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+}
+
+/**
+ * Lazily `require`s `expo-notifications`, exactly like `googleNativeSignIn.ts`
+ * does for the native Google SDK: a static top-level `import` runs this
+ * module's own init code the instant ANYTHING imports this file, which — since
+ * this file is pulled in unconditionally from the splash screen — crashed the
+ * entire app for every Android Expo Go user before they ever saw a single
+ * screen. Every function below already treats "unavailable" as a plain
+ * `null`/`false`, never a crash.
+ */
+function requireNotifications(): NotificationsModule | null {
+  if (loaded === undefined) {
+    if (isExpoGo()) {
+      loaded = null;
+    } else {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- must be lazy, see doc comment above
+        loaded = require('expo-notifications') as NotificationsModule;
+      } catch {
+        loaded = null;
+      }
+    }
+  }
+  return loaded;
+}
 
 export function pushPlatform(): 'ios' | 'android' | 'web' {
   return Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
@@ -28,6 +70,8 @@ export function pushPlatform(): 'ios' | 'android' | 'web' {
  */
 export async function resolvePushToken(): Promise<string | null> {
   if (!Device.isDevice || Platform.OS === 'web') return null;
+  const Notifications = requireNotifications();
+  if (!Notifications) return null;
 
   try {
     const { status } = await Notifications.getPermissionsAsync();
@@ -63,6 +107,8 @@ export async function registerPushToken(token: string): Promise<boolean> {
  */
 export async function requestPushPermission(): Promise<boolean> {
   if (!Device.isDevice || Platform.OS === 'web') return false;
+  const Notifications = requireNotifications();
+  if (!Notifications) return false;
   try {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') return false;
@@ -76,6 +122,8 @@ export async function requestPushPermission(): Promise<boolean> {
 /** Whether this device currently has permission to show notifications. */
 export async function hasPushPermission(): Promise<boolean> {
   if (!Device.isDevice || Platform.OS === 'web') return false;
+  const Notifications = requireNotifications();
+  if (!Notifications) return false;
   try {
     const { status } = await Notifications.getPermissionsAsync();
     return status === 'granted';

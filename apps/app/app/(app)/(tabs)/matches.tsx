@@ -14,6 +14,7 @@ import {
   EmptyState,
   FloatingObject,
   GroupedList,
+  IconButton,
   ListRow,
   Notice,
   Press,
@@ -21,11 +22,13 @@ import {
   Row,
   Screen,
   SegmentedControl,
+  shadows,
   SkeletonList,
   Stack,
   Text,
   colors,
   layout,
+  palette,
   radii,
   spacing,
   useToast,
@@ -33,6 +36,8 @@ import {
 
 import { AppHeader } from '@/components/AppHeader';
 import { ObjectCluster } from '@/components/brand/ObjectCluster';
+import { OrganicShape } from '@/components/brand/OrganicShape';
+import { PandamBackground } from '@/components/brand/PandamBackground';
 import { MatchCard } from '@/components/MatchCard';
 import { ErrorState } from '@/components/states';
 import { demoMatches, demoMergeList, demoOffers, demoQuery } from '@/dummy';
@@ -326,40 +331,53 @@ export default function MatchesScreen() {
 
   return (
     <Screen padded={false}>
-      <View
-        style={{
-          paddingHorizontal: layout.gutter,
-          paddingTop: spacing.lg,
-          width: '100%',
-          maxWidth: layout.contentMaxWidth,
-          alignSelf: 'center',
-        }}
-      >
-        <AppHeader
-          eyebrow="03"
-          title="Matches"
-          subtitle="Who you mirror, and who already wants to trade."
-          right={
-            matchCount > 0 ? (
-              <Badge label={`${matchCount} live`} kind="match" variant="solid" dot />
-            ) : null
-          }
-        />
-        <SegmentedControl
-          options={[
-            { value: 'reciprocal', label: 'Mirrors' },
-            {
-              value: 'received',
-              label: pendingIncoming > 0 ? `Received · ${pendingIncoming}` : 'Received',
-            },
-            { value: 'sent', label: 'Sent' },
-          ]}
-          value={tab}
-          onChange={(v) => {
-            setTab(v as Tab);
-            if (v !== 'received') setIncomingFilter('all');
+      <View style={{ overflow: 'hidden' }}>
+        <PandamBackground variant="matches" />
+        <View
+          style={{
+            paddingHorizontal: layout.gutter,
+            paddingTop: spacing.lg,
+            width: '100%',
+            maxWidth: layout.contentMaxWidth,
+            alignSelf: 'center',
           }}
-        />
+        >
+          <AppHeader
+            eyebrow="03"
+            title="Matches"
+            subtitle="Who you mirror, and who already wants to trade."
+            right={
+              <Row gap="sm" align="center">
+                {matchCount > 0 ? (
+                  <Badge label={`${matchCount} live`} kind="match" variant="solid" dot />
+                ) : null}
+                <IconButton
+                  variant="plain"
+                  size={40}
+                  icon={<Ionicons name="settings-outline" size={19} color={colors.textPrimary} />}
+                  accessibilityLabel="Account settings"
+                  onPress={() => router.push('/(app)/account')}
+                  style={{ backgroundColor: colors.surface, ...shadows.xs }}
+                />
+              </Row>
+            }
+          />
+          <SegmentedControl
+            options={[
+              { value: 'reciprocal', label: 'Mirrors' },
+              {
+                value: 'received',
+                label: pendingIncoming > 0 ? `Received · ${pendingIncoming}` : 'Received',
+              },
+              { value: 'sent', label: 'Sent' },
+            ]}
+            value={tab}
+            onChange={(v) => {
+              setTab(v as Tab);
+              if (v !== 'received') setIncomingFilter('all');
+            }}
+          />
+        </View>
       </View>
 
       {tab === 'received' ? (
@@ -478,6 +496,38 @@ export default function MatchesScreen() {
               <ErrorState error={incoming.error} onRetry={() => void incoming.refetch()} />
             ) : (
               <EmptyState
+                art={
+                  <View style={{ width: 200, height: 140, alignItems: 'center' }}>
+                    <OrganicShape
+                      size={170}
+                      color={palette.orange50}
+                      rotate={-6}
+                      style={{ top: 0 }}
+                    />
+                    <FloatingObject
+                      amplitude={6}
+                      rotate={3}
+                      style={{ position: 'absolute', top: 24 }}
+                    >
+                      <View
+                        style={{
+                          width: 76,
+                          height: 76,
+                          borderRadius: radii.lg,
+                          backgroundColor: colors.surface,
+                          borderWidth: 1.5,
+                          borderColor: colors.textPrimary,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transform: [{ rotate: '-6deg' }],
+                          ...shadows.md,
+                        }}
+                      >
+                        <Ionicons name="send" size={28} color={colors.textPrimary} />
+                      </View>
+                    </FloatingObject>
+                  </View>
+                }
                 icon={
                   <Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />
                 }
@@ -529,6 +579,7 @@ export default function MatchesScreen() {
               <ErrorState error={offersTab.error} onRetry={() => void offersTab.refetch()} />
             ) : (
               <EmptyState
+                art={<ObjectCluster left="laptop" right="headphones" icon="send" />}
                 icon={
                   <Ionicons name="paper-plane-outline" size={22} color={colors.textSecondary} />
                 }

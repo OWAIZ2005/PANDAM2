@@ -4,15 +4,12 @@ import { boundedString, usernameSchema, z, type PatchProfileInput } from '@panda
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import * as ImagePicker from 'expo-image-picker';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import {
-  Avatar,
   Button,
   Field,
   Notice,
-  Row,
   Screen,
   Stack,
   Text,
@@ -23,6 +20,8 @@ import {
 } from '@pandam/ui';
 
 import { AppHeader } from '@/components/AppHeader';
+import { AvatarPicker } from '@/components/AvatarPicker';
+import { PandamBackground } from '@/components/brand/PandamBackground';
 import { ApiError } from '@/lib/api/client';
 import { useSession } from '@/lib/auth/hooks';
 import { useUpdateProfile } from '@/lib/auth/profile';
@@ -48,34 +47,11 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { profile } = useSession();
+  const { user, profile } = useSession();
   const update = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
   const toast = useToast();
-
-  /**
-   * Avatars upload straight away rather than on save: the picker already made
-   * the choice explicit, and a photo that only appears after "Save changes"
-   * reads as the tap having failed.
-   */
-  const pickAvatar = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-    const uri = res.canceled ? null : res.assets[0]?.uri;
-    if (!uri) return;
-    uploadAvatar.mutate(uri, {
-      onSuccess: () => toast.success('Photo updated.'),
-      onError: () =>
-        Alert.alert(
-          'Upload failed',
-          'That photo could not be uploaded. Check your connection and try again.',
-        ),
-    });
-  };
+  const verified = user?.identityVerification?.status === 'verified';
 
   const { control, handleSubmit, reset, formState } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -135,8 +111,11 @@ export default function EditProfileScreen() {
         </Stack>
       }
     >
-      <View style={{ paddingHorizontal: layout.gutter, paddingTop: spacing.lg }}>
-        <AppHeader title="Edit profile" back />
+      <View style={{ overflow: 'hidden' }}>
+        <PandamBackground variant="create" />
+        <View style={{ paddingHorizontal: layout.gutter, paddingTop: spacing.lg }}>
+          <AppHeader title="Edit profile" subtitle="Tell others about yourself." back />
+        </View>
       </View>
 
       <ScrollView
@@ -148,32 +127,27 @@ export default function EditProfileScreen() {
         }}
       >
         <Stack gap="lg">
-          <Row gap="lg" style={{ marginBottom: spacing.xs }}>
-            <Avatar
+          <Stack gap="xs" style={{ alignItems: 'center', marginBottom: spacing.xs }}>
+            <AvatarPicker
               name={profile?.displayName ?? 'You'}
-              size={60}
+              size={96}
               uri={mediaSrc(profile?.avatarUrl)}
+              busy={uploadAvatar.isPending}
+              onPicked={(uri) =>
+                uploadAvatar.mutate(uri, {
+                  onSuccess: () => toast.success('Photo updated.'),
+                  onError: () => toast.error('That photo could not be uploaded. Please try again.'),
+                })
+              }
             />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="bodyStrong">Your photo</Text>
-              <Text variant="caption" tone="muted">
-                {uploadAvatar.isPending
-                  ? 'Uploading…'
-                  : profile?.avatarUrl
-                    ? 'Tap to change it.'
-                    : 'Optional — otherwise your initials are used.'}
-              </Text>
-              <Row gap="md" style={{ marginTop: spacing.xs }}>
-                <Text
-                  variant="label"
-                  tone="accent"
-                  onPress={uploadAvatar.isPending ? undefined : () => void pickAvatar()}
-                >
-                  {profile?.avatarUrl ? 'Change photo' : 'Add a photo'}
-                </Text>
-              </Row>
-            </View>
-          </Row>
+            <Text variant="label" tone="accent">
+              {uploadAvatar.isPending
+                ? 'Uploading…'
+                : profile?.avatarUrl
+                  ? 'Change photo'
+                  : 'Add a photo'}
+            </Text>
+          </Stack>
 
           <Controller
             control={control}
@@ -248,6 +222,36 @@ export default function EditProfileScreen() {
               {formError}
             </Notice>
           ) : null}
+
+          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            <Text variant="bodyStrong">Verification</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md,
+                padding: spacing.md,
+                borderRadius: 14,
+                backgroundColor: verified ? colors.matchSoft : colors.surfaceMuted,
+              }}
+            >
+              <Ionicons
+                name={verified ? 'shield-checkmark' : 'shield-outline'}
+                size={22}
+                color={verified ? colors.match : colors.textMuted}
+              />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="bodyStrong" tone={verified ? 'match' : 'primary'}>
+                  {verified ? 'Identity Verified' : 'Not verified yet'}
+                </Text>
+                <Text variant="caption" tone="muted">
+                  {verified
+                    ? 'Your identity has been verified'
+                    : 'Verify your identity to build trust with other traders'}
+                </Text>
+              </View>
+            </View>
+          </View>
         </Stack>
       </ScrollView>
     </Screen>

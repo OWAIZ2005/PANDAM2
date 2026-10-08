@@ -27,11 +27,12 @@ export function primaryImage(images: ItemImage[] | undefined): string | undefine
 /**
  * Wrap a local file URI as multipart form data.
  *
- * React Native's `FormData` accepts this `{ uri, name, type }` shape directly
- * and streams the file without loading it into JS memory — the reason uploads
- * go through multipart rather than a base64 JSON body. On web the picker hands
- * back a `blob:`/`data:` URL, which has to be fetched into a real `Blob`
- * first, so the two platforms genuinely need different paths here.
+ * Every platform fetches the URI into a real `Blob`/`File` rather than
+ * appending the classic RN `{ uri, name, type }` object shape directly: on
+ * newer Android builds that shape is sometimes rejected by `FormData` with
+ * "Unsupported FormDataPart implementation" (the object isn't recognised as
+ * a valid part), while `fetch(uri)` → `Blob` → `File` always is — the same
+ * path web already needed for its `blob:`/`data:` URIs, now used everywhere.
  */
 async function imageForm(uri: string): Promise<FormData> {
   const form = new FormData();
@@ -40,14 +41,8 @@ async function imageForm(uri: string): Promise<FormData> {
   const type =
     extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg';
 
-  if (uri.startsWith('blob:') || uri.startsWith('data:')) {
-    const blob = await fetch(uri).then((r) => r.blob());
-    form.append('file', new File([blob], name, { type: blob.type || type }));
-    return form;
-  }
-
-  // Native: the platform resolves the `file://` URI when the request is sent.
-  form.append('file', { uri, name, type } as unknown as Blob);
+  const blob = await fetch(uri).then((r) => r.blob());
+  form.append('file', new File([blob], name, { type: blob.type || type }));
   return form;
 }
 
