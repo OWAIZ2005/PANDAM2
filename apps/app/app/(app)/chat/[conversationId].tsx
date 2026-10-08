@@ -189,7 +189,15 @@ function DaySeparator({ label }: { label: string }) {
  * (1 → 0.94 → 1) stands in for the press ripple every other primary action
  * in the product already uses.
  */
-function SendButton({ active, disabled, onPress }: { active: boolean; disabled: boolean; onPress: () => void }) {
+function SendButton({
+  active,
+  disabled,
+  onPress,
+}: {
+  active: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
   const motionOK = useMotionOK();
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));

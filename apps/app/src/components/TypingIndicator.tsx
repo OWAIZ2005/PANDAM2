@@ -25,10 +25,7 @@ function Dot({ delay }: { delay: number }) {
     p.value = withDelay(
       delay,
       withRepeat(
-        withSequence(
-          withTiming(1, { duration: 360 }),
-          withTiming(0, { duration: 360 }),
-        ),
+        withSequence(withTiming(1, { duration: 360 }), withTiming(0, { duration: 360 })),
         -1,
       ),
     );

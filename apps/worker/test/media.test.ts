@@ -232,7 +232,6 @@ describe('listing photos', () => {
       );
     expect(res.status).toBe(503);
   });
-
 });
 
 describe('need photos', () => {

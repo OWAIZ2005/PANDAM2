@@ -167,8 +167,7 @@ conversationsRoute.get('/:id/typing', authMiddleware, requireAuth, async (c) => 
   const conversation = await requireParticipant(c, c.req.param('id'), user.id);
   const participants = await repos.conversations.listParticipants(conversation.id);
   const typing = participants.some(
-    (p) =>
-      p.userId !== user.id && p.typingAt !== null && Date.now() - p.typingAt < TYPING_TTL_MS,
+    (p) => p.userId !== user.id && p.typingAt !== null && Date.now() - p.typingAt < TYPING_TTL_MS,
   );
   const view: TypingStatusView = { typing };
   return sendOk(c, view);
